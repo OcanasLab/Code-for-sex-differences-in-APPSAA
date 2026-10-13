@@ -1,0 +1,107 @@
+
+library(Seurat)
+library(ggplot2)
+library(scDblFinder)
+
+
+
+obj_names <- read.csv("short_sample_names.csv", header = TRUE)
+
+scrna.list <- list()
+
+
+for(i in 1:length(obj_names$File_names))
+{
+  data <- paste0(obj_names$File_names[i], ".rds")
+  seurat_data <- readRDS(data)
+  scrna.list[i] <- seurat_data
+  data <- NULL
+  
+  
+}
+
+
+# Doublet removal via scDblFinder
+for (i in 1:length(scrna.list)) {
+  scrna.list[[i]]$mitoPercent <- PercentageFeatureSet(object = scrna.list[[i]], pattern = "^mt-")
+}
+
+
+scrna.list.filtered = list()
+
+for (i in 1:length(scrna.list)) {
+  scrna.list.filtered[[i]] <- subset(scrna.list[[i]], subset = nFeature_RNA > 300 & mitoPercent < 10)
+}
+
+
+
+
+
+for (i in 1:length(scrna.list.filtered)) {
+  scrna.list.filtered[[i]] <- NormalizeData(scrna.list.filtered[[i]])
+  scrna.list.filtered[[i]] <- FindVariableFeatures(scrna.list.filtered[[i]])
+  scrna.list.filtered[[i]] <- ScaleData(scrna.list.filtered[[i]])
+  scrna.list.filtered[[i]] <- RunPCA(scrna.list.filtered[[i]])
+}
+
+
+
+for(i in 1:length(scrna.list.filtered)){
+
+	
+  scrna.list.filtered[[i]] <- FindNeighbors(scrna.list.filtered[[i]], dims=1:20)
+  scrna.list.filtered[[i]] <- FindClusters(scrna.list.filtered[[i]])
+  scrna.list.filtered[[i]] <- RunUMAP(scrna.list.filtered[[i]], dims=1:20)
+ 
+  
+}
+
+
+
+sce = list()
+scrna.list.singlets = list()
+
+for (i in 1:length(scrna.list.filtered)) {
+  # 1) Assign the Seurat cluster identities
+  Idents(scrna.list.filtered[[i]]) <- "seurat_clusters"
+  scrna.list.filtered[[i]] <- JoinLayers(scrna.list.filtered[[i]])
+  # 2) Run scDblFinder and store the class
+  sce[[i]] <- scDblFinder(
+    GetAssayData(scrna.list.filtered[[i]], layer = "counts"),
+    clusters = Idents(scrna.list.filtered[[i]])
+  )
+  scrna.list.filtered[[i]]$scDblFinder.class <- sce[[i]]$scDblFinder.class
+  
+  # Plot UMAP colored by the doublet/singlet classification
+  DimPlot(
+    scrna.list.filtered[[i]],
+    reduction = 'umap',
+    group.by = "scDblFinder.class"
+  )
+  
+  # Subset to keep only singlets
+  scrna.list.singlets[[i]] <- subset(
+    x = scrna.list.filtered[[i]],
+    subset = scDblFinder.class == "singlet"
+  )
+}
+for(i in 1:length(scrna.list.singlets)){
+  
+  
+  scrna.list.singlets[[i]]@meta.data[["orig.ident"]]  <- obj_names$Sample_names[[i]]
+  
+}
+
+
+
+names(scrna.list.singlets) <- obj_names$Sample_names
+
+
+
+for (i in 1:length(scrna.list.singlets)){
+  filename <- names(scrna.list.singlets[i])
+  filename <- paste0(filename, ".rds")
+  saveRDS(scrna.list.singlets[i], file = filename)
+}
+
+

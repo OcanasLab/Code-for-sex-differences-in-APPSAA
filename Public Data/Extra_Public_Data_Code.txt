@@ -1,0 +1,128 @@
+
+
+GSE156183 <- readRDS("GSE156183_Microglia.rds")
+
+
+GSE147495 <- readRDS("GSE147495_Microglia.rds")
+
+combo <- readRDS("C:interim_afterUMAP.rds")
+
+
+
+GSE241553 <- readRDS("GSE241553_Microglia.rds")
+
+
+
+
+
+#CV-female-IgG-rep1
+#CV-female-IgG-rep2
+#CV-male-IgG-rep1
+#CV-male-IgG-rep2 
+
+
+Idents(GSE156183) <- "sample"
+
+shrt_gse1561 <- subset(GSE156183, idents = c("CV-female-IgG-rep1", "CV-female-IgG-rep2", 
+                                             "CV-male-IgG-rep1", "CV-male-IgG-rep2"))
+
+Idents(shrt_gse1561) <- "sex"
+
+
+
+microglia_F56vM56_DEGs <- FindMarkers(shrt_gse1561, ident.1 = "female", ident.2 = "male", logfc.threshold = 0, min.pct = 0.1)
+write.csv(microglia_F56vM56_DEGs, "~fc=0_5xFAD_FvM_DEGs.csv")
+
+
+
+Idents(GSE241553) <- "treatment"
+
+TAM <- subset(GSE241553, idents = "TAM")
+Control <- subset(GSE241553, idents= "control")
+
+
+Idents(TAM) <- "genotype"
+
+
+E3subset <- subset(TAM, idents = "APP/PS1/E3")
+Idents(E3subset) <- "sex"
+
+microglia_F56vM56_DEGs <- FindMarkers(E3subset, ident.1 = "F", ident.2 = "M", logfc.threshold = 0, min.pct = 0.1)
+write.csv(microglia_F56vM56_DEGs, "~fc=0_TAM_PS1APOE3_FvM_DEGs.csv")
+
+
+E4subset <- subset(TAM, idents = "APP/PS1/E4")
+Idents(E4subset) <- "sex"
+
+
+microglia_F56vM56_DEGs <- FindMarkers(E4subset, ident.1 = "F", ident.2 = "M", logfc.threshold = 0, min.pct = 0.1)
+write.csv(microglia_F56vM56_DEGs, "~fc=0_TAM_PS1APOE4_FvM_DEGs.csv")
+
+
+
+
+Idents(Control) <- "genotype"
+
+
+
+E4subset <- subset(Control, idents = "APP/PS1/E4")
+Idents(E4subset) <- "sex"
+
+
+microglia_F56vM56_DEGs <- FindMarkers(E4subset, ident.1 = "F", ident.2 = "M", logfc.threshold = 0, min.pct = 0.1)
+write.csv(microglia_F56vM56_DEGs, "~fc=0_Control_PS1APOE4_FvM_DEGs.csv")
+
+
+E3subset <- subset(Control, idents = "APP/PS1/E3")
+Idents(E3subset) <- "sex"
+
+microglia_F56vM56_DEGs <- FindMarkers(E3subset, ident.1 = "F", ident.2 = "M", logfc.threshold = 0, min.pct = 0.1)
+write.csv(microglia_F56vM56_DEGs, "~fc=0_Control_PS1APOE3_FvM_DEGs.csv")
+
+
+
+
+
+
+
+
+Sala <- readRDS("Sala-Frigerio.rds")
+
+
+
+
+
+
+
+testdf <- as.data.frame(Sala@active.ident)
+
+test2df <- FetchData(object = Sala, vars = c("genotype", "sex", "age"))
+
+
+test2df$newrow <- paste(test2df$genotype, "-",test2df$sex, "", test2df$age)
+
+Sala <- AddMetaData(object = Sala, metadata = test2df$newrow, col.name = "Group")
+
+#Verify groups were binned correctly with Excel
+write.csv(Sala@meta.data, "Sala_Meta.csv")
+
+
+saveRDS(Sala, "Sala-Frigerio_withGroups.rds")
+
+
+Idents(Sala) <- "Group"
+
+
+
+Short_Sala <- subset(Sala, idents = c("APP_NL-F-G - Female  12", "APP_NL-F-G - Male  12",
+                                      "C57Bl/6 - Female  12", "C57Bl/6 - Male  12",
+                                      "C57Bl/6 - Female  21", "C57Bl/6 - Male  21"))
+
+
+DotPlot(Short_Sala, features = c("App","Bace1","Psen1","Jun","Egr1","Arc","Syt1","Snap25","Syn1","Dlg4","Gria1","Grin1"), cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+
+
+saveRDS(Short_Sala, "Short_Sala-Frigerio_withGroups.rds")
+
+

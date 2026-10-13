@@ -1,0 +1,492 @@
+
+
+######################################################################################################
+#GSE156183
+######################################################################################################
+
+
+feature_md <- read.delim2("GSE156183_Feature_metadata.tsv")
+cell_md <- read.delim2("GSE156183_Cell_metadata.tsv")
+
+
+write.csv(cell_md, "metadata.csv")
+
+GSM4726197 <- read.delim2("GSM4726197_RAW-CV-female-hT2AB-rep1.tsv")
+GSM4726197_md <- read.csv("CV-female-hT2AB-rep1_meta_data.csv", header= TRUE)
+GSM4726197_seurat <- CreateSeuratObject(GSM4726197)
+
+testthing <-  GSM4726197$feature_id
+cellnames <- cell_md$cell_id
+
+write.csv(testthing, "/GSE156183/metadatas/features_md.csv")
+
+write.csv(cellnames, "/GSE156183/metadatas/cells_md.csv")
+
+names <- read.csv("/GSE156183/metadatas/cells_md.csv")
+
+
+
+
+
+
+GSE156183 <- ReadMtx(
+  mtx = "/GSE156183/RAW.mtx",
+  features = "/GSE156183/metadatas/features_md.csv",
+  cells = "/GSE156183/metadatas/cells_md.csv",
+  
+  feature.column = 1,
+  
+  cell.column = 1
+  
+)
+
+GSE156183_Seurat <- CreateSeuratObject(GSE156183, meta.data = cell_md)
+
+
+GSE156183_Seurat$QC.fraction.of.mtrna <- NULL
+GSE156183_Seurat$QC.number.of.features<- NULL
+GSE156183_Seurat$QC.number.of.reads<- NULL
+GSE156183_Seurat$QC.number.of.umi<- NULL
+GSE156183_Seurat$QC.sequence.saturation<- NULL
+GSE156183_Seurat$QC.fraction.of.riboRNA<- NULL
+GSE156183_Seurat$QC.fraction.of.stressAffected<- NULL
+GSE156183_Seurat$QC.fraction.top500<- NULL
+GSE156183_Seurat$QC.fraction.top200<- NULL
+GSE156183_Seurat$QC.fraction.top100<- NULL
+GSE156183_Seurat$QC.fraction.top50<- NULL
+GSE156183_Seurat$QC.cellQuality.score<- NULL
+GSE156183_Seurat$QC.TREM2.Trem2.ratio<- NULL
+GSE156183_Seurat$QC.cellcycle.phase<- NULL
+GSE156183_Seurat$celltype<- NULL
+GSE156183_Seurat$pseudotime.Microglia.DAM<- NULL
+GSE156183_Seurat$pseudotime.Microglia.CycM<- NULL
+GSE156183_Seurat$pseudotime.Microglia.IFNR<- NULL
+GSE156183_Seurat$pseudotime.Microglia.MHCII<- NULL
+GSE156183_Seurat$UMAP_1.QC<- NULL
+GSE156183_Seurat$UMAP_2.QC<- NULL
+GSE156183_Seurat$UMAP_1.CD45pos<- NULL
+GSE156183_Seurat$UMAP_2.CD45pos<- NULL
+GSE156183_Seurat$UMAP_1.microglia.baseline<- NULL
+GSE156183_Seurat$UMAP_2.microglia.baseline<- NULL
+GSE156183_Seurat$UMAP_1.Microglia.DAM<- NULL
+GSE156183_Seurat$UMAP_2.Microglia.DAM<- NULL
+GSE156183_Seurat$UMAP_1.Microglia.CycM<- NULL
+GSE156183_Seurat$UMAP_2.Microglia.CycM<- NULL
+GSE156183_Seurat$UMAP_1.Microglia.IFNR<- NULL
+GSE156183_Seurat$UMAP_2.Microglia.IFNR<- NULL
+GSE156183_Seurat$UMAP_1.Microglia.MHCII<- NULL
+GSE156183_Seurat$UMAP_2.Microglia.MHCII<- NULL
+
+
+
+
+# 1. Extract the raw, unnormalized counts matrix from your original object
+# (Assuming your original object is named 'seurat_ensembl')
+counts_matrix <- GetAssayData(GSE156183_Seurat, assay = "RNA", layer = "counts")
+
+# 2. Clean Ensembl IDs (strips version decimals like ENSG00000139618.15 -> ENSG00000139618)
+cleaned_ids <- gsub("\\..*", "", rownames(counts_matrix))
+
+
+mart <- useMart(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
+
+symb <- getBM(attributes = c("ensembl_gene_id","mgi_symbol"),
+              filters = "ensembl_gene_id", cleaned_ids,
+              mart = mart)
+symbs <- symb$mgi_symbol[match(cleaned_ids, symb$ensembl_gene_id, nomatch = NA)]
+num <- length(symbs)
+# 4. Handle missing/NA values or duplicates to prevent Seurat errors
+# Replace missing symbols with the original Ensembl ID
+
+for (k in 1:num){ifelse(symbs[k] == "",symbs[k]<-NA, symbs)}
+symbs <- ifelse(is.na(symbs), cleaned_ids, symbs)
+
+
+# Make names unique if multiple Ensembl IDs mapped to the same Symbol
+symbs <- make.unique(symbs)
+
+#5. Assign the new gene symbols to the counts matrix rows
+rownames(counts_matrix) <- symbs
+
+# 6. Create a brand-new Seurat object with the updated matrix
+GSE156183_Seurat1 <- CreateSeuratObject(counts = counts_matrix)
+
+# 7. Optional: Copy over your original metadata if you had any
+GSE156183_Seurat1@meta.data <- GSE156183_Seurat@meta.data
+
+
+Idents(GSE156183_Seurat1) <- "sample"
+
+DotPlot(GSE156183_Seurat1, features = "Snap25", group.by  = "genotype")
+
+
+GSE156183_Seurat1$cell_id<- NULL
+
+GSE156183_Seurat1$project.ID <- "GSE156183"
+
+GSE156183_Seurat1$gene.type <- "Transgenic"
+GSE156183_Seurat1$pathology <- "AB"
+GSE156183_Seurat1$mouse.background.strain <- "C57BL/6 x SJL"
+GSE156183_Seurat1$age <- "8 mo"
+
+
+#saveRDS(GSE156183_Seurat1, "GSE156183_Seurat_raw_withmd.rds")
+
+
+######################################################################################################
+#GSE241553
+######################################################################################################
+
+
+#For these features grab column 2
+GSM7730873_out_MiE1 <- ReadMtx(mtx = "/GSE241553/GSM7730873_out_MiE-1.matrix.mtx", 
+                               cells = "/GSE241553/GSM7730873_out_MiE-1.barcodes.tsv",
+                               features = "/GSE241553/GSM7730873_out_MiE-1.features.tsv",
+                               feature.column = 2)
+
+GSM7730874_out_MiE2 <- ReadMtx(mtx = "/GSE241553/GSM7730874_out_MiE-2.matrix.mtx", 
+                               cells = "/GSE241553/GSM7730874_out_MiE-2.barcodes.tsv",
+                               features = "/GSE241553/GSM7730874_out_MiE-2.features.tsv",
+                               feature.column = 2)
+
+
+GSM7730875_out_MiE3 <- ReadMtx(mtx = "/GSE241553/GSM7730875_out_MiE-3.matrix.mtx", 
+                               cells = "/GSE241553/GSM7730875_out_MiE-3.barcodes.tsv",
+                               features = "/GSE241553/GSM7730875_out_MiE-3.features.tsv",
+                               feature.column = 2)
+
+
+GSM7730876_out_MiE4 <- ReadMtx(mtx = "/GSE241553/GSM7730876_out_MiE-4.matrix.mtx", 
+                               cells = "/GSE241553/GSM7730876_out_MiE-4.barcodes.tsv",
+                               features = "/GSE241553/GSM7730876_out_MiE-4.features.tsv",
+                               feature.column = 2)
+
+
+GSM7730877_out_MiE5 <- ReadMtx(mtx = "/GSE241553/GSM7730877_out_MiE-5.matrix.mtx", 
+                               cells = "/GSE241553/GSM7730877_out_MiE-5.barcodes.tsv",
+                               features = "/GSE241553/GSM7730877_out_MiE-5.features.tsv",
+                               feature.column = 2)
+
+
+GSM7730878_out_MiE6 <- ReadMtx(mtx = "/GSE241553/GSM7730878_out_MiE-6.matrix.mtx", 
+                               cells = "/GSE241553/GSM7730878_out_MiE-6.barcodes.tsv",
+                               features = "/GSE241553/GSM7730878_out_MiE-6.features.tsv",
+                               feature.column = 2)
+
+
+GSM7730879_out_MiE7 <- ReadMtx(mtx = "/GSE241553/GSM7730879_out_MiE-7.matrix.mtx", 
+                               cells = "/GSE241553/GSM7730879_out_MiE-7.barcodes.tsv",
+                               features = "/GSE241553/GSM7730879_out_MiE-7.features.tsv",
+                               feature.column = 2)
+
+
+GSM7730880_out_MiE8 <- ReadMtx(mtx = "/GSE241553/GSM7730880_out_MiE-8.matrix.mtx", 
+                               cells = "/GSE241553/GSM7730880_out_MiE-8.barcodes.tsv",
+                               features = "/GSE241553/GSM7730880_out_MiE-8.features.tsv",
+                               feature.column = 2)
+
+
+GSM7730881_out_MiE9 <- ReadMtx(mtx = "/GSE241553/GSM7730881_out_MiE-9.matrix.mtx", 
+                               cells = "/GSE241553/GSM7730881_out_MiE-9.barcodes.tsv",
+                               features = "/GSE241553/GSM7730881_out_MiE-9.features.tsv",
+                               feature.column = 2)
+
+
+GSM7730882_out_MiE10 <- ReadMtx(mtx = "/GSE241553/GSM7730882_out_MiE-10.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730882_out_MiE-10.barcodes.tsv",
+                                features = "/GSE241553/GSM7730882_out_MiE-10.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730883_out_MiE11 <- ReadMtx(mtx = "/GSE241553/GSM7730883_out_MiE-11.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730883_out_MiE-11.barcodes.tsv",
+                                features = "/GSE241553/GSM7730883_out_MiE-11.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730884_out_MiE12 <- ReadMtx(mtx = "/GSE241553/GSM7730884_out_MiE-12.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730884_out_MiE-12.barcodes.tsv",
+                                features = "/GSE241553/GSM7730884_out_MiE-12.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730885_out_MiE13 <- ReadMtx(mtx = "/GSE241553/GSM7730885_out_MiE-13.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730885_out_MiE-13.barcodes.tsv",
+                                features = "/GSE241553/GSM7730885_out_MiE-13.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730886_out_MiE14 <- ReadMtx(mtx = "/GSE241553/GSM7730886_out_MiE-14.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730886_out_MiE-14.barcodes.tsv",
+                                features = "/GSE241553/GSM7730886_out_MiE-14.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730887_out_MiE15 <- ReadMtx(mtx = "/GSE241553/GSM7730887_out_MiE-15.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730887_out_MiE-15.barcodes.tsv",
+                                features = "/GSE241553/GSM7730887_out_MiE-15.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730888_out_MiE16 <- ReadMtx(mtx = "/GSE241553/GSM7730888_out_MiE-16.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730888_out_MiE-16.barcodes.tsv",
+                                features = "/GSE241553/GSM7730888_out_MiE-16.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730889_out_MiE17 <- ReadMtx(mtx = "/GSE241553/GSM7730889_out_MiE-17.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730889_out_MiE-17.barcodes.tsv",
+                                features = "/GSE241553/GSM7730889_out_MiE-17.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730890_out_MiE18 <- ReadMtx(mtx = "/GSE241553/GSM7730890_out_MiE-18.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730890_out_MiE-18.barcodes.tsv",
+                                features = "/GSE241553/GSM7730890_out_MiE-18.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730891_out_MiE19 <- ReadMtx(mtx = "/GSE241553/GSM7730891_out_MiE-19.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730891_out_MiE-19.barcodes.tsv",
+                                features = "/GSE241553/GSM7730891_out_MiE-19.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730892_out_MiE20 <- ReadMtx(mtx = "/GSE241553/GSM7730892_out_MiE-20.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730892_out_MiE-20.barcodes.tsv",
+                                features = "/GSE241553/GSM7730892_out_MiE-20.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730893_out_MiE21 <- ReadMtx(mtx = "/GSE241553/GSM7730893_out_MiE-21.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730893_out_MiE-21.barcodes.tsv",
+                                features = "/GSE241553/GSM7730893_out_MiE-21.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730894_out_MiE22 <- ReadMtx(mtx = "/GSE241553/GSM7730894_out_MiE-22.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730894_out_MiE-22.barcodes.tsv",
+                                features = "/GSE241553/GSM7730894_out_MiE-22.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730895_out_MiE23 <- ReadMtx(mtx = "/GSE241553/GSM7730895_out_MiE-23.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730895_out_MiE-23.barcodes.tsv",
+                                features = "/GSE241553/GSM7730895_out_MiE-23.features.tsv",
+                                feature.column = 2)
+
+
+GSM7730896_out_MiE24 <- ReadMtx(mtx = "/GSE241553/GSM7730896_out_MiE-24.matrix.mtx", 
+                                cells = "/GSE241553/GSM7730896_out_MiE-24.barcodes.tsv",
+                                features = "/GSE241553/GSM7730896_out_MiE-24.features.tsv",
+                                feature.column = 2)
+
+
+
+
+
+
+# Create Seurat objects
+scrna.list <- list()
+
+# scRNA_10x_OvY
+scrna.list[[1]] <- CreateSeuratObject(GSM7730873_out_MiE1)
+scrna.list[[2]] <-CreateSeuratObject(GSM7730874_out_MiE2)
+scrna.list[[3]] <-CreateSeuratObject(GSM7730875_out_MiE3)
+scrna.list[[4]] <- CreateSeuratObject(GSM7730876_out_MiE4)
+scrna.list[[5]] <- CreateSeuratObject(GSM7730877_out_MiE5)
+scrna.list[[6]] <-CreateSeuratObject(GSM7730878_out_MiE6)
+scrna.list[[7]] <- CreateSeuratObject(GSM7730879_out_MiE7)
+scrna.list[[8]] <- CreateSeuratObject(GSM7730880_out_MiE8)
+scrna.list[[9]] <- CreateSeuratObject(GSM7730881_out_MiE9)
+scrna.list[[10]] <-CreateSeuratObject(GSM7730882_out_MiE10)
+scrna.list[[11]] <- CreateSeuratObject(GSM7730883_out_MiE11)
+scrna.list[[12]] <- CreateSeuratObject(GSM7730884_out_MiE12)
+scrna.list[[13]] <- CreateSeuratObject(GSM7730885_out_MiE13)
+scrna.list[[14]] <- CreateSeuratObject(GSM7730886_out_MiE14)
+scrna.list[[15]] <- CreateSeuratObject(GSM7730887_out_MiE15)
+scrna.list[[16]] <- CreateSeuratObject(GSM7730888_out_MiE16)
+scrna.list[[17]] <- CreateSeuratObject(GSM7730889_out_MiE17)
+scrna.list[[18]] <- CreateSeuratObject(GSM7730890_out_MiE18)
+scrna.list[[19]] <- CreateSeuratObject(GSM7730891_out_MiE19)
+scrna.list[[20]] <- CreateSeuratObject(GSM7730892_out_MiE20)
+scrna.list[[21]] <- CreateSeuratObject(GSM7730893_out_MiE21)
+scrna.list[[22]] <- CreateSeuratObject(GSM7730894_out_MiE22)
+scrna.list[[23]] <- CreateSeuratObject(GSM7730895_out_MiE23)
+scrna.list[[24]] <- CreateSeuratObject(GSM7730896_out_MiE24)
+
+
+names(scrna.list) <- c(# scRNA_10x_OvY
+  "GSM7730873_out_MiE1","GSM7730874_out_MiE2","GSM7730875_out_MiE3",
+  "GSM7730876_out_MiE4","GSM7730877_out_MiE5","GSM7730878_out_MiE6",
+  "GSM7730879_out_MiE7","GSM7730880_out_MiE8","GSM7730881_out_MiE9",
+  "GSM7730882_out_MiE10","GSM7730883_out_MiE11","GSM7730884_out_MiE12",
+  "GSM7730885_out_MiE13","GSM7730886_out_MiE14","GSM7730887_out_MiE15",
+  "GSM7730888_out_MiE16","GSM7730889_out_MiE17","GSM7730890_out_MiE18",
+  "GSM7730891_out_MiE19","GSM7730892_out_MiE20",'GSM7730893_out_MiE21',
+  "GSM7730894_out_MiE22","GSM7730895_out_MiE23","GSM7730896_out_MiE24")
+
+scrna.list[[1]]@meta.data[["orig.ident"]]  <- "GSM7730873_out_MiE1"
+scrna.list[[2]]@meta.data[["orig.ident"]]  <- "GSM7730874_out_MiE2"
+scrna.list[[3]]@meta.data[["orig.ident"]]  <- "GSM7730875_out_MiE3"
+scrna.list[[4]]@meta.data[["orig.ident"]]  <- "GSM7730876_out_MiE4"
+scrna.list[[5]]@meta.data[["orig.ident"]]  <- "GSM7730877_out_MiE5"
+scrna.list[[6]]@meta.data[["orig.ident"]]  <- "GSM7730878_out_MiE6"
+scrna.list[[7]]@meta.data[["orig.ident"]]  <- "GSM7730879_out_MiE7"
+scrna.list[[8]]@meta.data[["orig.ident"]]  <- "GSM7730880_out_MiE8"
+scrna.list[[9]]@meta.data[["orig.ident"]]  <- "GSM7730881_out_MiE9"
+scrna.list[[10]]@meta.data[["orig.ident"]]  <- "GSM7730882_out_MiE10"
+scrna.list[[11]]@meta.data[["orig.ident"]]  <- "GSM7730883_out_MiE11"
+scrna.list[[12]]@meta.data[["orig.ident"]]  <- "GSM7730884_out_MiE12"
+scrna.list[[13]]@meta.data[["orig.ident"]]  <- "GSM7730885_out_MiE13"
+scrna.list[[14]]@meta.data[["orig.ident"]]  <- "GSM7730886_out_MiE14"
+scrna.list[[15]]@meta.data[["orig.ident"]]  <- "GSM7730887_out_MiE15"
+scrna.list[[16]]@meta.data[["orig.ident"]]  <- "GSM7730888_out_MiE16"
+scrna.list[[17]]@meta.data[["orig.ident"]]  <- "GSM7730889_out_MiE17"
+scrna.list[[18]]@meta.data[["orig.ident"]]  <- "GSM7730890_out_MiE18"
+scrna.list[[19]]@meta.data[["orig.ident"]]  <- "GSM7730891_out_MiE19"
+scrna.list[[20]]@meta.data[["orig.ident"]]  <- "GSM7730892_out_MiE20"
+scrna.list[[21]]@meta.data[["orig.ident"]]  <- "GSM7730893_out_MiE21"
+scrna.list[[22]]@meta.data[["orig.ident"]]  <- "GSM7730894_out_MiE22"
+scrna.list[[23]]@meta.data[["orig.ident"]]  <- "GSM7730895_out_MiE23"
+scrna.list[[24]]@meta.data[["orig.ident"]]  <- "GSM7730896_out_MiE24"
+
+scrna.list[[1]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[2]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[3]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[4]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[5]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[6]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[7]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[8]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[9]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[10]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[11]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[12]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[13]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[14]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[15]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[16]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[17]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+scrna.list[[18]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[19]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[20]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[21]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[22]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[23]]@meta.data[["genotype"]]  <- "APP/PS1/E4"
+scrna.list[[24]]@meta.data[["genotype"]]  <- "APP/PS1/E3"
+
+scrna.list[[1]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[2]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[3]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[4]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[5]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[6]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[7]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[8]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[9]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[10]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[11]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[12]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[13]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[14]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[15]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[16]]@meta.data[["treatment"]]  <- "control"
+scrna.list[[17]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[18]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[19]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[20]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[21]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[22]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[23]]@meta.data[["treatment"]]  <- "TAM"
+scrna.list[[24]]@meta.data[["treatment"]]  <- "TAM"
+
+scrna.list[[1]]@meta.data[["sex"]]  <- "F"
+scrna.list[[2]]@meta.data[["sex"]]  <- "F"
+scrna.list[[3]]@meta.data[["sex"]]  <- "F"
+scrna.list[[4]]@meta.data[["sex"]]  <- "F"
+scrna.list[[5]]@meta.data[["sex"]]  <- "M"
+scrna.list[[6]]@meta.data[["sex"]]  <- "M"
+scrna.list[[7]]@meta.data[["sex"]]  <- "M"
+scrna.list[[8]]@meta.data[["sex"]]  <- "M"
+scrna.list[[9]]@meta.data[["sex"]]  <- "M"
+scrna.list[[10]]@meta.data[["sex"]]  <- "M"
+scrna.list[[11]]@meta.data[["sex"]]  <- "M"
+scrna.list[[12]]@meta.data[["sex"]]  <- "M"
+scrna.list[[13]]@meta.data[["sex"]]  <- "F"
+scrna.list[[14]]@meta.data[["sex"]]  <- "F"
+scrna.list[[15]]@meta.data[["sex"]]  <- "F"
+scrna.list[[16]]@meta.data[["sex"]]  <- "F"
+scrna.list[[17]]@meta.data[["sex"]]  <- "M"
+scrna.list[[18]]@meta.data[["sex"]]  <- "M"
+scrna.list[[19]]@meta.data[["sex"]]  <- "M"
+scrna.list[[20]]@meta.data[["sex"]]  <- "M"
+scrna.list[[21]]@meta.data[["sex"]]  <- "F"
+scrna.list[[22]]@meta.data[["sex"]]  <- "F"
+scrna.list[[23]]@meta.data[["sex"]]  <- "F"
+scrna.list[[24]]@meta.data[["sex"]]  <- "F"
+
+
+
+
+
+
+
+
+#######################
+#Combine and normalize and cluster together sets
+#######################
+experiment.aggregate <- merge(
+  x = scrna.list[[1]],
+  y = c(
+    scrna.list[[2]],
+    scrna.list[[3]],
+    scrna.list[[4]],
+    scrna.list[[5]],
+    scrna.list[[6]],
+    scrna.list[[7]],
+    scrna.list[[8]],
+    scrna.list[[9]],
+    scrna.list[[10]],
+    scrna.list[[11]],
+    scrna.list[[12]],
+    scrna.list[[13]],
+    scrna.list[[14]], 
+    scrna.list[[15]], 
+    scrna.list[[16]],
+    scrna.list[[17]], 
+    scrna.list[[18]], 
+    scrna.list[[19]], 
+    scrna.list[[20]], 
+    scrna.list[[21]], 
+    scrna.list[[22]], 
+    scrna.list[[23]], 
+    scrna.list[[24]]),
+  add.cell.ids = c(
+    "GSM7730873_out_MiE1","GSM7730874_out_MiE2","GSM7730875_out_MiE3",
+    "GSM7730876_out_MiE4","GSM7730877_out_MiE5","GSM7730878_out_MiE6",
+    "GSM7730879_out_MiE7","GSM7730880_out_MiE8","GSM7730881_out_MiE9",
+    "GSM7730882_out_MiE10","GSM7730883_out_MiE11","GSM7730884_out_MiE12",
+    "GSM7730885_out_MiE13","GSM7730886_out_MiE14","GSM7730887_out_MiE15",
+    "GSM7730888_out_MiE16","GSM7730889_out_MiE17","GSM7730890_out_MiE18",
+    "GSM7730891_out_MiE19","GSM7730892_out_MiE20",'GSM7730893_out_MiE21',
+    "GSM7730894_out_MiE22","GSM7730895_out_MiE23","GSM7730896_out_MiE24"),
+  project = "GSE241553"
+)
+
+
+experiment.aggregate$project.ID <- "GSE241553"
+experiment.aggregate$mouse.background.strain <- "C57BL/6J"
+experiment.aggregate$age <- "9 mo"
+experiment.aggregate$pathology <- "AB"
+experiment.aggregate$gene.type <- "Transgenic/Knock-In"
+
+
+DotPlot(experiment.aggregate, features = "Snap25", cols = c("blue", "red"), group.by = "genotype")
+
+
+
+
+saveRDS(experiment.aggregate, "GSE241553_Seurat_raw_withcorrectMD.rds")
+
+

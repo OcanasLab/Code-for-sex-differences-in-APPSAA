@@ -1,0 +1,145 @@
+
+###########################
+#GSE156183
+##########################
+
+GSE156183 <- readRDS("GSE156183.rds")
+
+DimPlot(GSE156183, reduction = "umap")
+
+
+GSE156183_dotplot1 <- DotPlot(GSE156183, features = c("Aif1", "Lyz1", "Msr1", "Mog", "Gfap", "Cdh5", "Clic6", "Otx2", "Snap25","Hba-a2","Hbb-bs","Hbb-bt"), 
+                              cols = c("blue", "red"), dot.scale = 10)
+
+GSE156183_dotplot2 <- DotPlot(GSE156183, features = c("Aif1", "Itgam", "Tmem119", "P2ry12", "Hexb", "Siglech", "Trem2"), 
+                              cols = c("blue", "red"), dot.scale = 10)
+ggsave("X:/Test_Space/scRNA_Meta/Microglia/Dotplots/GSE153895_dotplot1.eps" , plot = GSE156183_dotplot1)
+ggsave("X:/Test_Space/scRNA_Meta/Microglia/Dotplots/GSE153895_dotplot2.eps" , plot = GSE156183_dotplot2)
+
+
+cluster_labels <- c(
+  "Microglia",         
+  "Microglia",         
+  "Microglia",        
+  "Microglia",        
+  "Microglia",            
+  "Microglia",         
+  "Microglia",          
+  "Microglia",        
+  "Microglia",        
+  "Microglia",         
+  "Microglia",         
+  "11",     
+  "Microglia",        
+  "13",     
+  "Microglia",       
+  "15",         
+  "16",   
+  "17",
+  "18",
+  "19",
+  "20",
+  "21"
+)
+
+# Map cluster numbers (0:8) to their corresponding labels
+names(cluster_labels) <- as.character(0:21)
+
+# Apply the labels to your Seurat object
+names(cluster_labels) <- levels(GSE156183)
+GSE156183 <- RenameIdents(GSE156183, cluster_labels)
+
+GSE156183_microglia <- subset(GSE156183, idents = "Microglia")
+
+#saveRDS(GSE156183_microglia, "GSE156183_Microglia.rds")
+
+
+GSE156183_dotplot3 <- DotPlot(GSE156183, features = c("Aif1", "Lyz1", "Msr1", "Mog", "Gfap", "Cdh5", "Clic6", "Otx2", "Snap25","Hba-a2","Hbb-bs","Hbb-bt"), 
+                              cols = c("blue", "red"), dot.scale = 10)
+
+GSE156183_dotplot4 <- DotPlot(GSE156183, features = c("Aif1", "Itgam", "Tmem119", "P2ry12", "Hexb", "Siglech", "Trem2"), 
+                              cols = c("blue", "red"), dot.scale = 10)
+
+
+ggsave("GSE156183_dotplot3.eps" , plot = GSE156183_dotplot3)
+ggsave("GSE156183_dotplot4.eps" , plot = GSE156183_dotplot4)
+
+
+
+
+
+
+###########################
+#GSE241553
+##########################
+
+GSE241553 <- readRDS("GSE241553.rds")
+GSE241553 <- GSE241553[[1]]
+
+DimPlot(GSE241553, reduction = "umap")
+
+GSE241553_dotplot1 <- DotPlot(GSE241553, features = c("Aif1", "Lyz1", "Msr1", "Mog", "Gfap", "Cdh5", "Clic6", "Otx2", "Snap25","Hba-a2","Hbb-bs","Hbb-bt"), 
+                              cols = c("blue", "red"), dot.scale = 10)
+
+GSE241553_dotplot2 <- DotPlot(GSE241553, features = c("Aif1", "Itgam", "Tmem119", "P2ry12", "Hexb", "Siglech", "Trem2"), 
+                              cols = c("blue", "red"), dot.scale = 10)
+ggsave("GSE241553_dotplot1.eps" , plot = GSE241553_dotplot1)
+ggsave("GSE241553_dotplot2.eps" , plot = GSE241553_dotplot2)
+
+
+cluster_labels <- c(
+  "Microglia",         
+  "Microglia",         
+  "Microglia",        
+  "Microglia",        
+  "Microglia",            
+  "Microglia",         
+  "Microglia",          
+  "Microglia",        
+  "Microglia",        
+  "9",         
+  "Microglia",         
+  "11",     
+  "12",        
+  "13",     
+  "Microglia",       
+  "15",         
+  "Microglia",   
+  "17",
+  "18",
+  "19",
+  "20"
+)
+
+# Map cluster numbers (0:8) to their corresponding labels
+names(cluster_labels) <- as.character(0:20)
+
+# Apply the labels to your Seurat object
+names(cluster_labels) <- levels(GSE241553)
+GSE241553 <- RenameIdents(GSE241553, cluster_labels)
+
+GSE241553_microglia <- subset(GSE241553, idents = "Microglia")
+
+#saveRDS(GSE241553_microglia, "GSE241553_Microglia.rds")
+
+
+
+
+GSE241553_dotplot3 <- DotPlot(GSE241553, features = c("Aif1", "Lyz1", "Msr1", "Mog", "Gfap", "Cdh5", "Clic6", "Otx2", "Snap25","Hba-a2","Hbb-bs","Hbb-bt"), 
+                              cols = c("blue", "red"), dot.scale = 10)
+
+GSE241553_dotplot4 <- DotPlot(GSE241553, features = c("Aif1", "Itgam", "Tmem119", "P2ry12", "Hexb", "Siglech", "Trem2"), 
+                              cols = c("blue", "red"), dot.scale = 10)
+
+
+ggsave("GSE241553_dotplot3.eps" , plot = GSE241553_dotplot3)
+ggsave("GSE241553_dotplot4.eps" , plot = GSE241553_dotplot4)
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,4188 @@
+### QC Pipeline  ###
+
+# Load required libraries
+library(Seurat)  # Single-cell RNA-seq data analysis
+library(hdf5r)  # Reading and writing HDF5 files (for 10x Genomics data)
+library(scDblFinder)  # Doublet detection in single-cell RNA-seq data
+library(presto)  # Fast differential expression analysis for large datasets
+library(Matrix)  # Efficient sparse matrix operations
+library(SeuratDisk)  # Converting and handling Seurat objects efficiently
+library(SingleCellExperiment)  # Standardized container for single-cell data
+library(ggplot2)  # Visualization and plotting
+library(tidyverse)  # Data manipulation and cleaning
+
+# Set working directory
+setwd("")
+setwd("")
+
+# Command to run CellBender via HPC
+# ls file_directory/outs/per_sample_outs/*/count/sample_raw_feature_bc_matrix.h5 | parallel 'sbatch run_cellbender_v1.sh {}'
+# CellBender 0.2.2 works, but 0.3.2 has compatibility issues with CellRanger and Seurat
+# ml spider numpy (checks the available versions of numpy)
+# ml spider CellBender (checks he available versions of CellBender)
+#################################################################################################################
+# Load Raw datasets (before CellBender)
+# scRNA_10x_OvY
+OF_1_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_1/count/sample_raw_feature_bc_matrix.h5")
+OF_2_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_2/count/sample_raw_feature_bc_matrix.h5")
+OF_3_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_3/count/sample_raw_feature_bc_matrix.h5")
+OF_4_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_4/count/sample_raw_feature_bc_matrix.h5")
+OF_5_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_5/count/sample_raw_feature_bc_matrix.h5")
+OF_6_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_6/count/sample_raw_feature_bc_matrix.h5")
+OM_1_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_1/count/sample_raw_feature_bc_matrix.h5")
+OM_2_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_2/count/sample_raw_feature_bc_matrix.h5")
+OM_3_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_3/count/sample_raw_feature_bc_matrix.h5")
+OM_4_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_4/count/sample_raw_feature_bc_matrix.h5")
+OM_5_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_5/count/sample_raw_feature_bc_matrix.h5")
+OM_6_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_6/count/sample_raw_feature_bc_matrix.h5")
+YF_1_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/YF_1/count/sample_raw_feature_bc_matrix.h5")
+YF_2_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/YF_2/count/sample_raw_feature_bc_matrix.h5")
+YM_1_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/YM_1/count/sample_raw_feature_bc_matrix.h5")
+YM_2_raw=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/YM_2/count/sample_raw_feature_bc_matrix.h5")
+
+# APP_FvM
+Hom1_F_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/1Hom_F/count/sample_raw_feature_bc_matrix.h5")
+Hom1_M_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/1Hom_M/count/sample_raw_feature_bc_matrix.h5")
+WT1_F_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/1WT_F/count/sample_raw_feature_bc_matrix.h5")
+WT1_M_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/1WT_M/count/sample_raw_feature_bc_matrix.h5")
+Hom2_F_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/2Hom_F/count/sample_raw_feature_bc_matrix.h5")
+Hom2_M_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/2Hom_M/count/sample_raw_feature_bc_matrix.h5")
+WT2_F_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/2WT_F/count/sample_raw_feature_bc_matrix.h5")
+WT2_M_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/2WT_M/count/sample_raw_feature_bc_matrix.h5")
+Hom3_F_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/3Hom_F/count/sample_raw_feature_bc_matrix.h5")
+Hom3_M_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/3Hom_M/count/sample_raw_feature_bc_matrix.h5")
+Hom4_F_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/4Hom_F/count/sample_raw_feature_bc_matrix.h5")
+Hom4_M_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/4Hom_M/count/sample_raw_feature_bc_matrix.h5")
+Hom5_F_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/5Hom_F/count/sample_raw_feature_bc_matrix.h5")
+Hom5_M_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/5Hom_M/count/sample_raw_feature_bc_matrix.h5")
+Hom6_F_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/6Hom_F/count/sample_raw_feature_bc_matrix.h5")
+Hom6_M_raw=Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/6Hom_M/count/sample_raw_feature_bc_matrix.h5")
+
+\
+
+# Read CellBender output files
+# scRNA_10x_OvY
+OF_1=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_1/count/sample_cleaned_feature_bc_matrix.h5")
+OF_2=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_2/count/sample_cleaned_feature_bc_matrix.h5")
+OF_3=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_3/count/sample_cleaned_feature_bc_matrix.h5")
+OF_4=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_4/count/sample_cleaned_feature_bc_matrix.h5")
+OF_5=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_5/count/sample_cleaned_feature_bc_matrix.h5")
+OF_6=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OF_6/count/sample_cleaned_feature_bc_matrix.h5")
+OM_1=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_1/count/sample_cleaned_feature_bc_matrix.h5")
+OM_2=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_2/count/sample_cleaned_feature_bc_matrix.h5")
+OM_3=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_3/count/sample_cleaned_feature_bc_matrix.h5")
+OM_4=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_4/count/sample_cleaned_feature_bc_matrix.h5")
+OM_5=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_5/count/sample_cleaned_feature_bc_matrix.h5")
+OM_6=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/OM_6/count/sample_cleaned_feature_bc_matrix.h5")
+YF_1=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/YF_1/count/sample_cleaned_feature_bc_matrix.h5")
+YF_2=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/YF_2/count/sample_cleaned_feature_bc_matrix.h5")
+YM_1=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/YM_1/count/sample_cleaned_feature_bc_matrix.h5")
+YM_2=Read10X_h5("scRNA_10x_OvY/scRNA_10x_OvY/outs/per_sample_outs/YM_2/count/sample_cleaned_feature_bc_matrix.h5")
+
+# APP FvM
+Hom1_F = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/1Hom_F/count/sample_cleaned_feature_bc_matrix.h5")
+Hom1_M = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/1Hom_M/count/sample_cleaned_feature_bc_matrix.h5")
+WT1_F = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/1WT_F/count/sample_cleaned_feature_bc_matrix.h5")
+WT1_M = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/1WT_M/count/sample_cleaned_feature_bc_matrix.h5")
+Hom2_F = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/2Hom_F/count/sample_cleaned_feature_bc_matrix.h5")
+Hom2_M = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/2Hom_M/count/sample_cleaned_feature_bc_matrix.h5")
+WT2_F = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/2WT_F/count/sample_cleaned_feature_bc_matrix.h5")
+WT2_M = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/2WT_M/count/sample_cleaned_feature_bc_matrix.h5")
+Hom3_F = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/3Hom_F/count/sample_cleaned_feature_bc_matrix.h5")
+Hom3_M = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/3Hom_M/count/sample_cleaned_feature_bc_matrix.h5")
+Hom4_F = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/4Hom_F/count/sample_cleaned_feature_bc_matrix.h5")
+Hom4_M = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/4Hom_M/count/sample_cleaned_feature_bc_matrix.h5")
+Hom5_F = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/5Hom_F/count/sample_cleaned_feature_bc_matrix.h5")
+Hom5_M = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/5Hom_M/count/sample_cleaned_feature_bc_matrix.h5")
+Hom6_F = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/6Hom_F/count/sample_cleaned_feature_bc_matrix.h5")
+Hom6_M = Read10X_h5("APP_FvM/APP_FvM_10x_scRNA/outs/per_sample_outs/6Hom_M/count/sample_cleaned_feature_bc_matrix.h5")
+
+
+
+#################################################################################################################
+# Function to count the number of detected cells
+count_cells <- function(matrix) {
+  return(ncol(matrix))
+}
+
+# Function to compute total RNA counts (sum of UMI counts)
+compute_total_rna <- function(matrix) {
+  return(sum(matrix))
+}
+# Create a dataframe to compare cell counts and RNA counts
+cell_rna_counts <- data.frame(
+  Sample = c(
+    # scRNA_10x_OvY
+    "OF_1", "OF_2", "OF_3", "OF_4", "OF_5", "OF_6",
+    "OM_1", "OM_2", "OM_3", "OM_4", "OM_5", "OM_6",
+    "YF_1", "YF_2", "YM_1", "YM_2",
+    # APP_FvM
+    "Hom1_F", "Hom1_M", "WT1_F", "WT1_M", "Hom2_F", "Hom2_M",
+    "WT2_F", "WT2_M", "Hom3_F", "Hom3_M", "Hom4_F", "Hom4_M",
+    "Hom5_F", "Hom5_M", "Hom6_F", "Hom6_M"
+  ),
+  
+  # Cell counts before and after CellBender
+  Cells_Raw = c(
+    count_cells(OF_1_raw), count_cells(OF_2_raw), count_cells(OF_3_raw), count_cells(OF_4_raw),
+    count_cells(OF_5_raw), count_cells(OF_6_raw), count_cells(OM_1_raw), count_cells(OM_2_raw),
+    count_cells(OM_3_raw), count_cells(OM_4_raw), count_cells(OM_5_raw), count_cells(OM_6_raw),
+    count_cells(YF_1_raw), count_cells(YF_2_raw), count_cells(YM_1_raw), count_cells(YM_2_raw),
+    count_cells(Hom1_F_raw), count_cells(Hom1_M_raw), count_cells(WT1_F_raw), count_cells(WT1_M_raw),
+    count_cells(Hom2_F_raw), count_cells(Hom2_M_raw), count_cells(WT2_F_raw), count_cells(WT2_M_raw),
+    count_cells(Hom3_F_raw), count_cells(Hom3_M_raw), count_cells(Hom4_F_raw), count_cells(Hom4_M_raw),
+    count_cells(Hom5_F_raw), count_cells(Hom5_M_raw), count_cells(Hom6_F_raw), count_cells(Hom6_M_raw)
+  ),
+  Cells_Cleaned = c(
+    count_cells(OF_1), count_cells(OF_2), count_cells(OF_3), count_cells(OF_4),
+    count_cells(OF_5), count_cells(OF_6), count_cells(OM_1), count_cells(OM_2),
+    count_cells(OM_3), count_cells(OM_4), count_cells(OM_5), count_cells(OM_6),
+    count_cells(YF_1), count_cells(YF_2), count_cells(YM_1), count_cells(YM_2),
+    count_cells(Hom1_F), count_cells(Hom1_M), count_cells(WT1_F), count_cells(WT1_M),
+    count_cells(Hom2_F), count_cells(Hom2_M), count_cells(WT2_F), count_cells(WT2_M),
+    count_cells(Hom3_F), count_cells(Hom3_M), count_cells(Hom4_F), count_cells(Hom4_M),
+    count_cells(Hom5_F), count_cells(Hom5_M), count_cells(Hom6_F), count_cells(Hom6_M)
+  ),
+  
+  # Total RNA before and after CellBender
+  Total_RNA_Raw = c(
+    compute_total_rna(OF_1_raw), compute_total_rna(OF_2_raw), compute_total_rna(OF_3_raw), compute_total_rna(OF_4_raw),
+    compute_total_rna(OF_5_raw), compute_total_rna(OF_6_raw), compute_total_rna(OM_1_raw), compute_total_rna(OM_2_raw),
+    compute_total_rna(OM_3_raw), compute_total_rna(OM_4_raw), compute_total_rna(OM_5_raw), compute_total_rna(OM_6_raw),
+    compute_total_rna(YF_1_raw), compute_total_rna(YF_2_raw), compute_total_rna(YM_1_raw), compute_total_rna(YM_2_raw),
+    compute_total_rna(Hom1_F_raw), compute_total_rna(Hom1_M_raw), compute_total_rna(WT1_F_raw), compute_total_rna(WT1_M_raw),
+    compute_total_rna(Hom2_F_raw), compute_total_rna(Hom2_M_raw), compute_total_rna(WT2_F_raw), compute_total_rna(WT2_M_raw),
+    compute_total_rna(Hom3_F_raw), compute_total_rna(Hom3_M_raw), compute_total_rna(Hom4_F_raw), compute_total_rna(Hom4_M_raw),
+    compute_total_rna(Hom5_F_raw), compute_total_rna(Hom5_M_raw), compute_total_rna(Hom6_F_raw), compute_total_rna(Hom6_M_raw)  ),
+  Total_RNA_Cleaned = c(
+    compute_total_rna(OF_1), compute_total_rna(OF_2), compute_total_rna(OF_3), compute_total_rna(OF_4),
+    compute_total_rna(OF_5), compute_total_rna(OF_6), compute_total_rna(OM_1), compute_total_rna(OM_2),
+    compute_total_rna(OM_3), compute_total_rna(OM_4), compute_total_rna(OM_5), compute_total_rna(OM_6),
+    compute_total_rna(YF_1), compute_total_rna(YF_2), compute_total_rna(YM_1), compute_total_rna(YM_2),
+    compute_total_rna(Hom1_F), compute_total_rna(Hom1_M), compute_total_rna(WT1_F), compute_total_rna(WT1_M),
+    compute_total_rna(Hom2_F), compute_total_rna(Hom2_M), compute_total_rna(WT2_F), compute_total_rna(WT2_M),
+    compute_total_rna(Hom3_F), compute_total_rna(Hom3_M), compute_total_rna(Hom4_F), compute_total_rna(Hom4_M),
+    compute_total_rna(Hom5_F), compute_total_rna(Hom5_M), compute_total_rna(Hom6_F), compute_total_rna(Hom6_M)
+  )
+)
+
+# Compute percent retention and reduction
+cell_rna_counts$Percent_Cells_Retained  <- (cell_rna_counts$Cells_Cleaned  / cell_rna_counts$Cells_Raw ) * 100
+cell_rna_counts$Percent_RNA_Retained    <- (cell_rna_counts$Total_RNA_Cleaned / cell_rna_counts$Total_RNA_Raw) * 100
+cell_rna_counts$Percent_Cells_Reduced   <- 100 - cell_rna_counts$Percent_Cells_Retained
+cell_rna_counts$Percent_RNA_Reduced     <- 100 - cell_rna_counts$Percent_RNA_Retained
+
+# Print summaries
+print(cell_rna_counts[, c("Sample", "Cells_Raw", "Cells_Cleaned", "Percent_Cells_Reduced")])
+print(cell_rna_counts[, c("Sample", "Total_RNA_Raw", "Total_RNA_Cleaned", "Percent_RNA_Reduced")])
+
+# Visualizations
+
+# Percent Reduction in Cell Count
+ggplot(cell_rna_counts, aes(x = Sample, y = Percent_Cells_Reduced, fill = Sample)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(y = "Percent Reduction in Cell Count", x = "Sample",
+       title = "Percent Reduction in Cells After CellBender") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_viridis_d()
+
+# Percent Reduction in Total RNA
+ggplot(cell_rna_counts, aes(x = Sample, y = Percent_RNA_Reduced, fill = Sample)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(y = "Percent Reduction in Total RNA", x = "Sample",
+       title = "Percent Reduction in Total RNA After CellBender") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_viridis_d()
+
+# Number of Cells Before vs After
+ggplot(cell_rna_counts, aes(x = Sample)) +
+  geom_bar(aes(y = Cells_Raw, fill = "Raw"), stat = "identity", position = "dodge") +
+  geom_bar(aes(y = Cells_Cleaned, fill = "Cleaned"), stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(y = "Number of Cells", title = "Cells Before and After CellBender") +
+  scale_fill_manual(name = "Dataset", values = c("Raw" = "red", "Cleaned" = "blue")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Total RNA Counts Before vs After
+ggplot(cell_rna_counts, aes(x = Sample)) +
+  geom_bar(aes(y = Total_RNA_Raw, fill = "Raw"), stat = "identity", position = "dodge") +
+  geom_bar(aes(y = Total_RNA_Cleaned, fill = "Cleaned"), stat = "identity", position = "dodge") +
+  theme_minimal() +
+  labs(y = "Total RNA Counts", title = "RNA Counts Before and After CellBender") +
+  scale_fill_manual(name = "Dataset", values = c("Raw" = "red", "Cleaned" = "blue")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+setwd("path/to/save/files")
+
+# (Optional) Save to CSV
+write.csv(cell_rna_counts[, c("Sample","Cells_Raw","Cells_Cleaned","Percent_Cells_Reduced")],
+          "Cell_Counts_Before_After_CellBender.csv", row.names = FALSE)
+write.csv(cell_rna_counts[, c("Sample","Total_RNA_Raw","Total_RNA_Cleaned","Percent_RNA_Reduced")],
+          "RNA_Counts_Before_After_CellBender.csv", row.names = FALSE)
+
+## Samples removed from analysis based on QC results
+# OF_4, Hom1_M, WT2_F
+
+
+
+
+#################################################################################################################
+# Create Seurat objects
+scrna.list <- list()
+
+# scRNA_10x_OvY
+scrna.list[[1]] <- CreateSeuratObject(counts = OF_1)
+scrna.list[[2]] <- CreateSeuratObject(counts = OF_2)
+scrna.list[[3]] <- CreateSeuratObject(counts = OF_3)
+scrna.list[[4]] <- CreateSeuratObject(counts = OF_5)
+scrna.list[[5]] <- CreateSeuratObject(counts = OF_6)
+scrna.list[[6]] <- CreateSeuratObject(counts = OM_1)
+scrna.list[[7]] <- CreateSeuratObject(counts = OM_2)
+scrna.list[[8]] <- CreateSeuratObject(counts = OM_3)
+scrna.list[[9]] <- CreateSeuratObject(counts = OM_5)
+scrna.list[[10]] <- CreateSeuratObject(counts = OM_6)
+scrna.list[[11]] <- CreateSeuratObject(counts = YF_1)
+scrna.list[[12]] <- CreateSeuratObject(counts = YF_2)
+scrna.list[[13]] <- CreateSeuratObject(counts = YM_1)
+scrna.list[[14]] <- CreateSeuratObject(counts = YM_2)
+
+# APP FvM
+scrna.list[[15]] <- CreateSeuratObject(counts = Hom1_F)
+scrna.list[[16]] <- CreateSeuratObject(counts = WT1_F)
+scrna.list[[17]] <- CreateSeuratObject(counts = WT1_M)
+scrna.list[[18]] <- CreateSeuratObject(counts = Hom2_F)
+scrna.list[[19]] <- CreateSeuratObject(counts = Hom2_M)
+scrna.list[[20]] <- CreateSeuratObject(counts = WT2_M)
+scrna.list[[21]] <- CreateSeuratObject(counts = Hom3_F)
+scrna.list[[22]] <- CreateSeuratObject(counts = Hom3_M)
+scrna.list[[23]] <- CreateSeuratObject(counts = Hom4_F)
+scrna.list[[24]] <- CreateSeuratObject(counts = Hom4_M)
+scrna.list[[25]] <- CreateSeuratObject(counts = Hom5_F)
+scrna.list[[26]] <- CreateSeuratObject(counts = Hom5_M)
+scrna.list[[27]] <- CreateSeuratObject(counts = Hom6_F)
+scrna.list[[28]] <- CreateSeuratObject(counts = Hom6_M)
+
+
+# Save the list of Seurat objects as an RDS checkpoint
+# saveRDS(scrna.list, file = "scrna.list.rds")
+#################################################################################################################
+# Doublet removal via scDblFinder
+for (i in 1:length(scrna.list)) {
+  scrna.list[[i]]$mitoPercent <- PercentageFeatureSet(object = scrna.list[[i]], pattern = "^mt-")
+}
+
+
+scrna.list.filtered = list()
+for (i in 1:58) {
+  scrna.list.filtered[[i]] <- subset(scrna.list[[i]],subset= nFeature_RNA > 300 & mitoPercent < 10)
+}
+
+
+for (i in 1:length(scrna.list.filtered)) {
+  scrna.list.filtered[[i]] <- NormalizeData(scrna.list.filtered[[i]])
+  scrna.list.filtered[[i]] <- FindVariableFeatures(scrna.list.filtered[[i]])
+  scrna.list.filtered[[i]] <- ScaleData(scrna.list.filtered[[i]])
+  scrna.list.filtered[[i]] <- RunPCA(scrna.list.filtered[[i]])
+}
+
+ElbowPlot(scrna.list.filtered[[1]])
+ElbowPlot(scrna.list.filtered[[2]])
+ElbowPlot(scrna.list.filtered[[3]])
+ElbowPlot(scrna.list.filtered[[4]])
+ElbowPlot(scrna.list.filtered[[5]])
+ElbowPlot(scrna.list.filtered[[6]])
+ElbowPlot(scrna.list.filtered[[7]])
+ElbowPlot(scrna.list.filtered[[8]])
+ElbowPlot(scrna.list.filtered[[9]])
+ElbowPlot(scrna.list.filtered[[10]])
+ElbowPlot(scrna.list.filtered[[11]])
+ElbowPlot(scrna.list.filtered[[12]])
+ElbowPlot(scrna.list.filtered[[13]])
+ElbowPlot(scrna.list.filtered[[14]])
+ElbowPlot(scrna.list.filtered[[15]])
+ElbowPlot(scrna.list.filtered[[16]])
+ElbowPlot(scrna.list.filtered[[17]])
+ElbowPlot(scrna.list.filtered[[18]])
+ElbowPlot(scrna.list.filtered[[19]])
+ElbowPlot(scrna.list.filtered[[20]])
+ElbowPlot(scrna.list.filtered[[21]])
+ElbowPlot(scrna.list.filtered[[22]])
+ElbowPlot(scrna.list.filtered[[23]])
+ElbowPlot(scrna.list.filtered[[24]])
+ElbowPlot(scrna.list.filtered[[25]])
+ElbowPlot(scrna.list.filtered[[26]])
+ElbowPlot(scrna.list.filtered[[27]])
+ElbowPlot(scrna.list.filtered[[28]])
+
+
+for (i in 1:length(scrna.list.filtered)) {
+  scrna.list.filtered[[i]] <- FindNeighbors(scrna.list.filtered[[i]], dims=1:20)
+  scrna.list.filtered[[i]] <- FindClusters(scrna.list.filtered[[i]])
+  scrna.list.filtered[[i]] <- RunUMAP(scrna.list.filtered[[i]], dims=1:20)
+}
+
+#Assign names before printing cell numbers
+names(scrna.list.filtered) <- c(# scRNA_10x_OvY
+  "OF_1","OF_2","OF_3","OF_5","OF_6",
+  "OM_1","OM_2","OM_3","OM_5","OM_6",
+  "YF_1","YF_2","YM_1","YM_2",
+  # APP FvM
+  "Hom1_F","WT1_F","WT1_M","Hom2_F","Hom2_M",
+  "WT2_M","Hom3_F","Hom3_M","Hom4_F","Hom4_M",
+  "Hom5_F","Hom5_M","Hom6_F","Hom6_M"
+)
+
+# Print the number of cells before doublet filtering
+cat("Number of cells before doublet filtering:\n")
+cell_counts_before <- sapply(scrna.list.filtered, function(x) ncol(x))
+print(cell_counts_before)
+
+sce = list()
+scrna.list.singlets = list()
+
+for (i in 1:58) {
+  # 1) Assign the Seurat cluster identities
+  Idents(scrna.list.filtered[[i]]) <- "seurat_clusters"
+  
+  # 2) Run scDblFinder and store the class
+  sce[[i]] <- scDblFinder(
+    GetAssayData(scrna.list.filtered[[i]], slot = "counts"),
+    clusters = Idents(scrna.list.filtered[[i]])
+  )
+  scrna.list.filtered[[i]]$scDblFinder.class <- sce[[i]]$scDblFinder.class
+  
+  # Plot UMAP colored by the doublet/singlet classification
+  DimPlot(
+    scrna.list.filtered[[i]],
+    reduction = 'umap',
+    group.by = "scDblFinder.class"
+  )
+  
+  # Subset to keep only singlets
+  scrna.list.singlets[[i]] <- subset(
+    x = scrna.list.filtered[[i]],
+    subset = scDblFinder.class == "singlet"
+  )
+}
+
+#Assign names before printing cell numbers
+names(scrna.list.singlets) <- c(# scRNA_10x_OvY
+  "OF_1","OF_2","OF_3","OF_5","OF_6",
+  "OM_1","OM_2","OM_3","OM_5","OM_6",
+  "YF_1","YF_2","YM_1","YM_2",
+  # APP FvM
+  "Hom1_F","WT1_F","WT1_M","Hom2_F","Hom2_M",
+  "WT2_M","Hom3_F","Hom3_M","Hom4_F","Hom4_M",
+  "Hom5_F","Hom5_M","Hom6_F","Hom6_M"
+)
+
+# Print number of cells after doublet filtering
+cat("\nNumber of cells after doublet filtering:\n")
+cell_counts_after <- sapply(scrna.list.singlets, function(x) ncol(x))
+print(cell_counts_after)
+
+# Compute the number of cells before and after doublet removal
+cell_counts <- data.frame(
+  Sample = names(scrna.list.filtered),
+  Cells_Before = sapply(scrna.list.filtered, function(x) ncol(x)),
+  Cells_After = sapply(scrna.list.singlets, function(x) ncol(x))
+)
+
+# Compute percent reduction in cell count
+cell_counts$Percent_Reduction <- ((cell_counts$Cells_Before - cell_counts$Cells_After) / cell_counts$Cells_Before) * 100
+
+# Print number of cells before doublet removal
+cat("Number of cells before doublet removal:\n")
+print(cell_counts[, c("Sample", "Cells_Before")])
+
+# Print number of cells after doublet removal
+cat("\nNumber of cells after doublet removal:\n")
+print(cell_counts[, c("Sample", "Cells_After")])
+
+# Print percent reduction in cell count
+cat("\nPercent reduction in cell count after doublet removal:\n")
+print(cell_counts[, c("Sample", "Percent_Reduction")])
+
+# Save the results as a CSV file
+write.csv(cell_counts, "Cell_Counts_Before_After_Doublet_Removal.csv", row.names = FALSE)
+
+# Assign orig.ident to each Seurat object (58 samples)
+scrna.list.singlets[[1]]@meta.data[["orig.ident"]]  <- "OF_1"
+scrna.list.singlets[[2]]@meta.data[["orig.ident"]]  <- "OF_2"
+scrna.list.singlets[[3]]@meta.data[["orig.ident"]]  <- "OF_3"
+scrna.list.singlets[[4]]@meta.data[["orig.ident"]]  <- "OF_5"
+scrna.list.singlets[[5]]@meta.data[["orig.ident"]]  <- "OF_6"
+scrna.list.singlets[[6]]@meta.data[["orig.ident"]]  <- "OM_1"
+scrna.list.singlets[[7]]@meta.data[["orig.ident"]]  <- "OM_2"
+scrna.list.singlets[[8]]@meta.data[["orig.ident"]]  <- "OM_3"
+scrna.list.singlets[[9]]@meta.data[["orig.ident"]]  <- "OM_5"
+scrna.list.singlets[[10]]@meta.data[["orig.ident"]] <- "OM_6"
+scrna.list.singlets[[11]]@meta.data[["orig.ident"]] <- "YF_1"
+scrna.list.singlets[[12]]@meta.data[["orig.ident"]] <- "YF_2"
+scrna.list.singlets[[13]]@meta.data[["orig.ident"]] <- "YM_1"
+scrna.list.singlets[[14]]@meta.data[["orig.ident"]] <- "YM_2"
+
+scrna.list.singlets[[15]]@meta.data[["orig.ident"]] <- "Hom1_F"
+scrna.list.singlets[[16]]@meta.data[["orig.ident"]] <- "WT1_F"
+scrna.list.singlets[[17]]@meta.data[["orig.ident"]] <- "WT1_M"
+scrna.list.singlets[[18]]@meta.data[["orig.ident"]] <- "Hom2_F"
+scrna.list.singlets[[19]]@meta.data[["orig.ident"]] <- "Hom2_M"
+scrna.list.singlets[[20]]@meta.data[["orig.ident"]] <- "WT2_M"
+scrna.list.singlets[[21]]@meta.data[["orig.ident"]] <- "Hom3_F"
+scrna.list.singlets[[22]]@meta.data[["orig.ident"]] <- "Hom3_M"
+scrna.list.singlets[[23]]@meta.data[["orig.ident"]] <- "Hom4_F"
+scrna.list.singlets[[24]]@meta.data[["orig.ident"]] <- "Hom4_M"
+scrna.list.singlets[[25]]@meta.data[["orig.ident"]] <- "Hom5_F"
+scrna.list.singlets[[26]]@meta.data[["orig.ident"]] <- "Hom5_M"
+scrna.list.singlets[[27]]@meta.data[["orig.ident"]] <- "Hom6_F"
+scrna.list.singlets[[28]]@meta.data[["orig.ident"]] <- "Hom6_M"
+
+
+# Merge all 58 Seurat objects into one
+experiment.aggregate <- merge(
+  x = scrna.list.singlets[[1]],
+  y = c(
+    scrna.list.singlets[[2]],  scrna.list.singlets[[3]],  scrna.list.singlets[[4]],
+    scrna.list.singlets[[5]],  scrna.list.singlets[[6]],  scrna.list.singlets[[7]],
+    scrna.list.singlets[[8]],  scrna.list.singlets[[9]],  scrna.list.singlets[[10]],
+    scrna.list.singlets[[11]], scrna.list.singlets[[12]], scrna.list.singlets[[13]],
+    scrna.list.singlets[[14]], scrna.list.singlets[[15]], scrna.list.singlets[[16]],
+    scrna.list.singlets[[17]], scrna.list.singlets[[18]], scrna.list.singlets[[19]],
+    scrna.list.singlets[[20]], scrna.list.singlets[[21]], scrna.list.singlets[[22]],
+    scrna.list.singlets[[23]], scrna.list.singlets[[24]], scrna.list.singlets[[25]],
+    scrna.list.singlets[[26]], scrna.list.singlets[[27]], scrna.list.singlets[[28]]
+  ),
+  add.cell.ids = c(
+    "OF_1","OF_2","OF_3","OF_5","OF_6",
+    "OM_1","OM_2","OM_3","OM_5","OM_6",
+    "YF_1","YF_2","YM_1","YM_2",
+    "Hom1_F","WT1_F","WT1_M","Hom2_F","Hom2_M","WT2_M",
+    "Hom3_F","Hom3_M","Hom4_F","Hom4_M","Hom5_F","Hom5_M","Hom6_F","Hom6_M"
+  ),
+  project = "Combined_scRNA"
+)
+
+# Confirm metadata assignments
+head(experiment.aggregate[[]])
+
+# Save the merged Seurat object
+# saveRDS(experiment.aggregate, file = "experiment.aggregate.rds")
+#################################################################################################################
+#QC prior to clustering
+#Plot QC features as VlnPlots
+QC_feats <- c("nFeature_RNA", "nCount_RNA", "mitoPercent")
+
+#Combined violin plot of QC metrics before filtering
+VlnPlot(
+  experiment.aggregate,
+  group.by="orig.ident",
+  features = QC_feats,
+  ncol = 3, pt.size = 0)
+
+# Define (and update) group based on orig.ident
+experiment.aggregate@meta.data[["group"]] <- ifelse(
+  experiment.aggregate@meta.data[["orig.ident"]] %in% c("OF_1","OF_2","OF_3","OF_5","OF_6"),
+  yes = "WT_OF",
+  no  = ifelse(
+    experiment.aggregate@meta.data[["orig.ident"]] %in% c("OM_1","OM_2","OM_3","OM_5","OM_6"),
+    yes = "WT_OM",
+    no  = ifelse(
+      experiment.aggregate@meta.data[["orig.ident"]] %in% c("YF_1","YF_2"),
+      yes = "WT_YF",
+      no  = ifelse(
+        experiment.aggregate@meta.data[["orig.ident"]] %in% c("YM_1","YM_2"),
+        yes = "WT_YM",
+        no  = ifelse(
+          experiment.aggregate@meta.data[["orig.ident"]] %in% c("Hom1_F","Hom2_F","Hom3_F","Hom4_F","Hom5_F","Hom6_F"),
+          yes = "APP_F",
+          no  = ifelse(
+            experiment.aggregate@meta.data[["orig.ident"]] %in% c("Hom2_M","Hom3_M","Hom4_M","Hom5_M","Hom6_M"),
+            yes = "APP_M",
+            no  = "UNKNOWN"
+            
+            
+          )
+        )
+      )
+    )
+  )
+)
+
+
+#do.call("cbind", tapply(experiment.aggregate@meta.data[["nFeature_RNA"]],experiment.aggregate@meta.data[["orig.ident"]],quantile,probs=seq(0,1,0.05)))
+RidgePlot(experiment.aggregate, features="nFeature_RNA", group.by="orig.ident")
+
+round(do.call("cbind", tapply(experiment.aggregate@meta.data[["mitoPercent"]],experiment.aggregate@meta.data[["orig.ident"]],quantile,probs=seq(0,1,0.05))), digits = 3)
+RidgePlot(experiment.aggregate, features="mitoPercent", group.by="orig.ident")
+
+do.call("cbind", tapply(experiment.aggregate@meta.data[["nCount_RNA"]],experiment.aggregate@meta.data[["orig.ident"]],quantile,probs=seq(0,1,0.05)))
+RidgePlot(experiment.aggregate, features="nCount_RNA", group.by="orig.ident")
+
+
+Idents(experiment.aggregate) <- "orig.ident"
+
+
+#Detection-based filtering
+#Here we will only consider cells with at least 500 detected genes and genes need to be expressed in at least 3 cells. 
+#Please note that those values are highly dependent on the library preparation method used.
+
+experiment.aggregate.merged <- JoinLayers(experiment.aggregate)
+
+selected_c <- WhichCells(experiment.aggregate.merged, expression = nFeature_RNA > 500)
+selected_f <- rownames(experiment.aggregate.merged)[Matrix::rowSums(experiment.aggregate.merged) > 3]
+
+#Do not filter on number of features yet, as high number of features can indicate doublets
+
+data.filt <- subset(experiment.aggregate.merged, features = selected_f, cells = selected_c)
+dim(data.filt)
+ncol(data.filt)
+
+#Filter based on mitochondrial and number of features
+data.filt <- subset(data.filt, subset = mitoPercent < 10 & nFeature_RNA < 6000 & nCount_RNA > 500)
+dim(data.filt)
+
+#Combined violin plot of QC metrics after filtering
+VlnPlot(
+  data.filt,
+  features = c("nFeature_RNA", "nCount_RNA","mitoPercent"),
+  ncol = 1, pt.size = 0)
+
+# Compute the number of cells before QC filtering (after doublet removal)
+# cell_counts_before_qc <- data.frame(
+# Sample = names(scrna.list.singlets),
+#  Cells_Before_QC = sapply(scrna.list.singlets, function(x) ncol(x))  # After doublet removal, before QC
+#)
+
+# Compute the number of cells after QC filtering
+#cells_after_qc <- as.data.frame(table(data.filt$orig.ident))
+#colnames(cells_after_qc) <- c("Sample", "Cells_After_QC")
+
+# Merge both datasets
+#qc_summary <- merge(cell_counts_before_qc, cells_after_qc, by = "Sample")
+
+# Compute percent reduction in cell count after QC filtering
+#qc_summary$Percent_Reduction_QC <- ((qc_summary$Cells_Before_QC - qc_summary$Cells_After_QC) / qc_summary$Cells_Before_QC) * 100
+
+# Print to confirm output
+#print(qc_summary)
+
+# Save as CSV file
+#write.csv(qc_summary, "Cell_Counts_Before_After_QC_Filtering.csv", row.names = FALSE)
+
+# Compute number of cells before QC (i.e. after doublet removal, pre‐filtering)
+cell_counts_before_qc <- as.data.frame(table(experiment.aggregate$orig.ident))
+colnames(cell_counts_before_qc) <- c("Sample", "Cells_Before_QC")
+
+# 3) Compute number of cells after QC filtering
+cells_after_qc <- as.data.frame(table(data.filt$orig.ident))
+colnames(cells_after_qc) <- c("Sample", "Cells_After_QC")
+
+# 4) Merge and calculate percent reduction
+qc_summary <- merge(cell_counts_before_qc, cells_after_qc, by = "Sample")
+qc_summary$Percent_Reduction_QC <- 
+  ( (qc_summary$Cells_Before_QC - qc_summary$Cells_After_QC) / qc_summary$Cells_Before_QC ) * 100
+
+# 5) Inspect and write out
+print(qc_summary)
+write.csv(qc_summary, "Cell_Counts_Before_After_QC_Filtering.csv", row.names = FALSE)
+
+#Perform log normalization
+data.filt = NormalizeData(data.filt)
+
+head(data.filt[[]])
+Idents(data.filt) <- "orig.ident"
+
+data.filt = FindVariableFeatures(data.filt, verbose = F)
+#data.filt = ScaleData(data.filt, vars.to.regress = c("nFeature_RNA"), verbose = F)
+data.filt = ScaleData(data.filt, verbose = F)
+data.filt <- RunPCA(data.filt, features = VariableFeatures(object = data.filt))
+
+ElbowPlot(data.filt)
+
+data.filt = RunPCA(data.filt, verbose = F, npcs = 20)
+data.filt = RunUMAP(data.filt, dims = 1:20, verbose = F)
+
+#Visualize the UMAP clustering by age, perform integration only if there appears to be batch effects
+DimPlot(data.filt,label=TRUE)
+
+saveRDS(data.filt, file = "data_filt.rds")
+################################################################################################################## 
+#Clustering analysis
+combined <- FindNeighbors(data.filt, reduction = "pca", dims = 1:20)
+
+# Identify neighbors using PCA-reduced dimensions
+combined <- FindNeighbors(data.filt, reduction = "pca", dims = 1:20)
+
+# Cluster samples 
+combined <- FindClusters(combined, resolution = 0.1)
+
+# Visualize clusters
+DimPlot(combined, label = TRUE)
+
+# Ensure layers are joined correctly
+combined <- JoinLayers(combined)
+
+# Identify marker genes distinguishing clusters
+combined.markers <- FindAllMarkers(
+  combined, only.pos = TRUE, 
+  min.pct = 0.01, logfc.threshold = 0.25
+)
+
+# Save marker genes to CSV
+write.csv(combined.markers, "combined_markers.csv")
+
+#Visualize in UMAP
+DimPlot(combined,label = TRUE)
+
+# Remove non-microglial clusters based on expressed marker genes
+# Visualize marker expression to identify microglia
+# Visualize marker expression to identify microglia
+DotPlot(combined, features = c("Aif1", "Lyz1", "Msr1", "Mog", "Gfap", "Cdh5", "Clic6", "Otx2", "Snap25","Hba-a2","Hbb-bs","Hbb-bt"), 
+        cols = c("blue", "red"), dot.scale = 10)
+
+DotPlot(combined, features = c("Aif1", "Itgam", "Tmem119", "P2ry12", "Hexb", "Siglech", "Trem2"), 
+        cols = c("blue", "red"), dot.scale = 10)
+
+# Save final Seurat objects
+saveRDS(combined, "combined.rds")
+
+
+
+
+
+########## I. Analysis in ALL CELLS ##########
+
+# Load required libraries
+library(Seurat)  # Single-cell RNA-seq data analysis
+library(hdf5r)  # Reading and writing HDF5 files (for 10x Genomics data)
+library(scDblFinder)  # Doublet detection in single-cell RNA-seq data
+library(presto)  # Fast differential expression analysis for large datasets
+library(Matrix)  # Efficient sparse matrix operations
+library(SeuratDisk)  # Converting and handling Seurat objects efficiently
+library(SingleCellExperiment)  # Standardized container for single-cell data
+library(ggplot2)  # Visualization and plotting
+library(tidyverse)  # Data manipulation and cleaning
+
+# Set working directory
+setwd("")
+
+combined <- readRDS("combined.rds")
+
+# Subset experimental group out of combined object
+YngvOldvAPP <- c("APP_F", "APP_M", "WT_F", "WT_M", "WT_OF", "WT_OM", "WT_YF","WT_YM")
+
+YngvOldvAPP <- subset(combined, subset = group %in% YngvOldvAPP)
+
+YngvOldvAPP$group <- as.character(YngvOldvAPP$group)
+
+# Create new metadata column called "age_group" to check for age effects in wildtype groups. One WT_YM was removed later for FvM comparisons in YngFvM to balance the sexes in that group. Objects without this sample will say "filtered" in the name.
+
+YngvOldvAPP$age_group <- ifelse(
+  YngvOldvAPP$orig.ident %in% c("YF_1", "YF_2"),
+  "7mo_WTF",
+  
+  ifelse(
+    YngvOldvAPP$orig.ident %in% c("WT1_F"),
+    "13mo_WTF",
+    
+    ifelse(
+      YngvOldvAPP$orig.ident %in% c("YM_1", "YM_2"),
+      "7mo_WTM",
+      
+      ifelse(
+        YngvOldvAPP$orig.ident %in% c("WT1_M", "WT2_M"),
+        "13mo_WTM",
+        
+        ifelse(
+          YngvOldvAPP$orig.ident %in% c("OF_1", "OF_2", "OF_3", "OF_4"),
+          "25mo_WTF",
+          
+          ifelse(
+            YngvOldvAPP$orig.ident %in% c("OF_5", "OF_6"),
+            "29mo_WTF",
+            
+            ifelse(
+              YngvOldvAPP$orig.ident %in% c("OM_1", "OM_2", "OM_3", "OM_4"),
+              "25mo_WTM",
+              
+              ifelse(
+                YngvOldvAPP$orig.ident %in% c("OM_5", "OM_6"),
+                "29mo_WTM",
+                NA
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+)
+
+# Check assignments
+table(YngvOldvAPP$age_group)
+
+# Set custom order for age_group
+YngvOldvAPP$age_group <- factor(
+  YngvOldvAPP$age_group,
+  levels = c(
+    "7mo_WTF",
+    "13mo_WTF",
+    "7mo_WTM",
+    "13mo_WTM",
+    "25mo_WTF",
+    "29mo_WTF",
+    "25mo_WTM",
+    "29mo_WTM",
+    "13mo_APPF",
+    "13mo_APPM"
+  )
+)
+
+# Set identities
+Idents(YngvOldvAPP) <- "age_group"
+
+# Generate DotPlot
+DotPlot(
+  YngvOldvAPP,
+  features = c(
+    "Tmem119", "P2ry12", "Itgax", "Trem2", "Adgrf5", "Mog",
+    "Slc1a2", "Kl", "Snap25", "Tnr", "Dcx", "Mrc1",
+    "Notch3", "Cd3e", "Col1a1", "Ccdc153"
+  ),
+  group.by = "age_group",
+  cols = c("blue", "red"),
+  dot.scale = 10
+) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 8)
+  )
+
+
+# Add age metadata based on orig.ident
+YngvOldvAPP$age <- case_when(
+  YngvOldvAPP$orig.ident %in% c("YF_1", "YF_2") ~ "7mo",
+  YngvOldvAPP$orig.ident %in% c("YM_1", "YM_2") ~ "7mo",
+  YngvOldvAPP$orig.ident %in% c("WT1_F", "WT1_M", "WT2_M") ~ "13mo",
+  YngvOldvAPP$orig.ident %in% c("OF_1", "OF_2", "OF_3", "OF_4") ~ "25mo",
+  YngvOldvAPP$orig.ident %in% c("OM_1", "OM_2", "OM_3", "OM_4") ~ "25mo",
+  YngvOldvAPP$orig.ident %in% c("OF_5", "OF_6") ~ "29mo",
+  YngvOldvAPP$orig.ident %in% c("OM_5", "OM_6") ~ "29mo",
+  YngvOldvAPP$orig.ident %in% c("Hom1_F", "Hom2_F", "Hom3_F", "Hom4_F", "Hom5_F", "Hom6_F") ~ "13mo",
+  YngvOldvAPP$orig.ident %in% c("Hom1_M", "Hom2_M", "Hom3_M", "Hom4_M", "Hom5_M", "Hom6_M") ~ "13mo",
+  TRUE ~ NA_character_
+)
+
+# Optional: add genotype and sex metadata if not already present
+YngvOldvAPP$sex <- case_when(
+  grepl("(^[A-Z]*F(?=_)|_(F)$)", YngvOldvAPP$orig.ident, perl = TRUE) ~ "F",
+  grepl("(^[A-Z]*M(?=_)|_(M)$)", YngvOldvAPP$orig.ident, perl = TRUE) ~ "M",
+  TRUE ~ NA_character_
+)
+
+YngvOldvAPP$genotype <- case_when(
+  grepl("Hom", YngvOldvAPP$orig.ident) ~ "APP",
+  grepl("APP", YngvOldvAPP$orig.ident) ~ "APP",
+  TRUE ~ "WT"
+)
+
+
+
+
+
+
+
+# Genes you want expression data for
+genesfortable <- c("Trem2", "Axl", "Cst7","Itgax","Gnas","Nlrp3","Actg1","Csf1","Vegfa","Thbs1","Igf1","Plau","Gpr34","Slc2a1","Slc7a5","Lgals3bp","Msmo1","Hmgcr","Tpi1","Dhcr7","Bcl2","Pmvk","Selenow","Parp10","Usp18","Fdft1","Tpt1","Irf7","Ets2")
+
+
+
+
+
+
+#Continuing with the QC and the YngvOldvAPP object
+
+
+YngvOldvAPP$group[YngvOldvAPP$group %in% c("WT_F", "WT_YF")] <- "WT_YF"
+YngvOldvAPP$group[YngvOldvAPP$group %in% c("WT_M", "WT_YM")] <- "WT_YM"
+
+YngvOldvAPP$group <- factor(YngvOldvAPP$group)
+
+table(YngvOldvAPP$group)
+
+YngvOldvAPP <- ScaleData(YngvOldvAPP, verbose = FALSE)
+YngvOldvAPP <- RunPCA(YngvOldvAPP, npcs = 20, verbose = FALSE)
+YngvOldvAPP <- RunUMAP(YngvOldvAPP, reduction = "pca", dims = 1:20)
+YngvOldvAPP <- FindNeighbors(YngvOldvAPP, reduction = "pca", dims = 1:20)
+YngvOldvAPP <- FindClusters(YngvOldvAPP, resolution = 0.1)
+
+DimPlot(YngvOldvAPP, label=TRUE)
+
+# Identify marker genes distinguishing clusters
+YngvOldvAPP_markers <- FindAllMarkers(
+  YngvOldvAPP, only.pos = TRUE, 
+  min.pct = 0.01, logfc.threshold = 0.25)
+write.csv(YngvOldvAPP_markers,
+          "YngvOldvAPP_markers.csv",
+          row.names = FALSE)
+# Save marker genes to CSV
+write.csv(YngvOldvAPP_markers, "YngvOldvAPP_markers.csv")
+
+
+#Dotplot from Figure 1.G.
+DotPlot(YngvOldvAPP, features = c("Tmem119", "P2ry12", "Itgax", "Trem2", "Adgrf5", "Mog", "Slc1a2", "Kl", "Snap25", "Tnr", "Dcx","Mrc1","Notch3", "Cd3e", "Col1a1","Ccdc153"), cols = c("blue", "red"), dot.scale = 10) + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+saveRDS(YngvOldvAPP, "YngvOldvAPP.rds")
+
+### Assign cluster names
+# Define the new cluster identities (in order of cluster numbers 0 to 13)
+cluster_labels <- c(
+  "0_MG_A",           # Cluster 0
+  "1_MG_B",           # Cluster 1
+  "2_EC",             # Cluster 2
+  "3_OLG",            # Cluster 3
+  "4_ASC",            # Cluster 4
+  "5_CPC",            # Cluster 5
+  "6_NEUR",           # Cluster 6
+  "7_OPC",            # Cluster 7
+  "8_NPC",            # Cluster 8
+  "9_MAC",            # Cluster 9
+  "10_VSMC",          # Cluster 10
+  "11_TC",            # Cluster 11
+  "12_VLMC",	      # Cluster 12
+  "13_EPC"	      # Cluster 13
+)
+
+# Map cluster numbers (0:13) to their corresponding labels
+names(cluster_labels) <- as.character(0:13)
+
+# Apply the labels to your Seurat object
+names(cluster_labels) <- levels(YngvOldvAPP)
+YngvOldvAPP <- RenameIdents(YngvOldvAPP, cluster_labels)
+
+#UMAP visualization from Figure 1.F.
+DimPlot(YngvOldvAPP, label = TRUE)
+
+saveRDS(YngvOldvAPP, "YngvOldvAPP.rds")
+
+
+
+
+### subset all cell types
+
+
+microglia <-subset(YngvOldvAPP, idents=c("0_MG_A","1_MG_B"))
+endothelial  <- subset(YngvOldvAPP, idents = "2_EC")
+oligos <- subset(YngvOldvAPP, idents = "3_OLG")
+astrocytes  <- subset(YngvOldvAPP, idents = "4_ASC")
+choroid_plexus <- subset(YngvOldvAPP, idents = "5_CPC")
+neurons  <- subset(YngvOldvAPP, idents = "6_NEUR")
+OPCs  <- subset(YngvOldvAPP, idents = "7_OPC")
+NPCs  <- subset(YngvOldvAPP, idents = "8_NPC")
+macrophages  <- subset(YngvOldvAPP, idents = "9_MAC")
+VSMCs  <- subset(YngvOldvAPP, idents = "10_VSMC")
+monocytes <- subset(YngvOldvAPP, idents = "11_MNC")
+Tcells  <- subset(YngvOldvAPP, idents = "12_TC")
+ependymal  <- subset(YngvOldvAPP, idents = "13_EPC")
+
+saveRDS(YngvOldvAPP, "YngvOldvAPP.rds")
+
+
+
+
+
+#### Bulk comparisons ####
+### Bulk comparison between groups
+Idents(YngvOldvAPP) <- "group"
+Yng_FvM_DEGs<-FindMarkers(YngvOldvAPP, ident.1 = "WT_YF", ident.2= "WT_YM")
+Old_FvM_DEGs<-FindMarkers(YngvOldvAPP, ident.1 = "WT_OF", ident.2= "WT_OM")
+APP_FvM_DEGs<-FindMarkers(YngvOldvAPP, ident.1 = "APP_F", ident.2= "APP_M")
+APPvOld_F_DEGs<-FindMarkers(YngvOldvAPP, ident.1 = "APP_F", ident.2= "WT_OF")
+APPvOld_M_DEGs<-FindMarkers(YngvOldvAPP, ident.1 = "APP_M", ident.2= "WT_OM")
+APPvYng_F_DEGs<-FindMarkers(YngvOldvAPP, ident.1 = "WT_YF", ident.2= "APP_F")
+APPvYng_M_DEGs<-FindMarkers(YngvOldvAPP, ident.1 = "WT_YM", ident.2= "APP_M")
+YvO_F_DEGs<-FindMarkers(YngvOldvAPP, ident.1 = "WT_YF", ident.2= "WT_OF")
+YvO_M_DEGs<-FindMarkers(YngvOldvAPP, ident.1 = "WT_YM", ident.2= "WT_OM")
+
+write.csv(Yng_FvM_DEGs,"WT_FvM_DEGs.csv")
+write.csv(Old_FvM_DEGs,"Old_FvM_DEGs.csv")
+write.csv(APP_FvM_DEGs,"APP_FvM_DEGs.csv")
+write.csv(APPvOld_F_DEGs,"APPvOld_F_DEGs.csv")
+write.csv(APPvOld_M_DEGs,"APPvOld_M_DEGs.csv")
+write.csv(APPvYng_F_DEGs,"APPvYng_F_DEGs.csv")
+write.csv(APPvYng_M_DEGs,"APPvYng_M_DEGs.csv")
+write.csv(YvO_F_DEGs,"YvO_F_DEGs.csv")
+write.csv(YvO_M_DEGs,"YvO_M_DEGs.csv")
+
+
+
+###### Analysis for group effect (YngvOldvAPP) by cluster ######
+### PseudoBulk Comparison
+# initialize new column
+YngvOldvAPP$genotype <- NA
+
+# assign genotype in Seurat objects
+YngvOldvAPP$genotype[YngvOldvAPP$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+YngvOldvAPP$genotype[YngvOldvAPP$group %in% c("WT_OF", "WT_OM")] <- "Old"
+YngvOldvAPP$genotype[YngvOldvAPP$group %in% c("APP_F", "APP_M")] <- "APP"
+
+#Figure 2A
+Idents(YngvOldvAPP) <- "group"
+DimPlot(YngvOldvAPP, split.by = "genotype")
+
+#Figure 1I
+DotPlot(
+  YngvOldvAPP,
+  features = "App",
+  cols = c("blue", "red")
+) +
+  scale_size_continuous(
+    limits = c(0, 100),
+    breaks = c(0, 25, 50, 75, 100)
+  ) +
+  scale_color_gradient(
+    low = "blue",
+    high = "red",
+    limits = c(-1, 1),
+    breaks = c(-1, -0.5, 0, 0.5, 1),
+    oob = scales::squish
+  )
+
+
+
+endothelial$genotype <- NA
+endothelial$genotype[endothelial$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+endothelial$genotype[endothelial$group %in% c("WT_OF", "WT_OM")] <- "Old"
+endothelial$genotype[endothelial$group %in% c("APP_F", "APP_M")] <- "APP"
+endothelial$genotype <- factor(endothelial$genotype, levels = c("Yng", "Old", "APP"))
+Idents(endothelial) <- "genotype"
+levels(Idents(endothelial))
+
+oligos$genotype <- NA
+oligos$genotype[oligos$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+oligos$genotype[oligos$group %in% c("WT_OF", "WT_OM")] <- "Old"
+oligos$genotype[oligos$group %in% c("APP_F", "APP_M")] <- "APP"
+oligos$genotype <- factor(oligos$genotype, levels = c("Yng", "Old", "APP"))
+Idents(oligos) <- "genotype"
+levels(Idents(oligos))
+
+astrocytes$genotype <- NA
+astrocytes$genotype[astrocytes$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+astrocytes$genotype[astrocytes$group %in% c("WT_OF", "WT_OM")] <- "Old"
+astrocytes$genotype[astrocytes$group %in% c("APP_F", "APP_M")] <- "APP"
+astrocytes$genotype <- factor(astrocytes$genotype, levels = c("Yng", "Old", "APP"))
+Idents(astrocytes) <- "genotype"
+levels(Idents(astrocytes))
+
+choroid_plexus$genotype <- NA
+choroid_plexus$genotype[choroid_plexus$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+choroid_plexus$genotype[choroid_plexus$group %in% c("WT_OF", "WT_OM")] <- "Old"
+choroid_plexus$genotype[choroid_plexus$group %in% c("APP_F", "APP_M")] <- "APP"
+choroid_plexus$genotype <- factor(choroid_plexus$genotype, levels = c("Yng", "Old", "APP"))
+Idents(choroid_plexus) <- "genotype"
+levels(Idents(choroid_plexus))
+
+neurons$genotype <- NA
+neurons$genotype[neurons$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+neurons$genotype[neurons$group %in% c("WT_OF", "WT_OM")] <- "Old"
+neurons$genotype[neurons$group %in% c("APP_F", "APP_M")] <- "APP"
+neurons$genotype <- factor(neurons$genotype, levels = c("Yng", "Old", "APP"))
+Idents(neurons) <- "genotype"
+levels(Idents(neurons))
+
+OPCs$genotype <- NA
+OPCs$genotype[OPCs$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+OPCs$genotype[OPCs$group %in% c("WT_OF", "WT_OM")] <- "Old"
+OPCs$genotype[OPCs$group %in% c("APP_F", "APP_M")] <- "APP"
+OPCs$genotype <- factor(OPCs$genotype, levels = c("Yng", "Old", "APP"))
+Idents(OPCs) <- "genotype"
+levels(Idents(OPCs))
+
+NPCs$genotype <- NA
+NPCs$genotype[NPCs$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+NPCs$genotype[NPCs$group %in% c("WT_OF", "WT_OM")] <- "Old"
+NPCs$genotype[NPCs$group %in% c("APP_F", "APP_M")] <- "APP"
+NPCs$genotype <- factor(NPCs$genotype, levels = c("Yng", "Old", "APP"))
+Idents(NPCs) <- "genotype"
+levels(Idents(NPCs))
+
+macrophages$genotype <- NA
+macrophages$genotype[macrophages$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+macrophages$genotype[macrophages$group %in% c("WT_OF", "WT_OM")] <- "Old"
+macrophages$genotype[macrophages$group %in% c("APP_F", "APP_M")] <- "APP"
+macrophages$genotype <- factor(macrophages$genotype, levels = c("Yng", "Old", "APP"))
+Idents(macrophages) <- "genotype"
+levels(Idents(macrophages))
+
+VSMCs$genotype <- NA
+VSMCs$genotype[VSMCs$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+VSMCs$genotype[VSMCs$group %in% c("WT_OF", "WT_OM")] <- "Old"
+VSMCs$genotype[VSMCs$group %in% c("APP_F", "APP_M")] <- "APP"
+VSMCs$genotype <- factor(VSMCs$genotype, levels = c("Yng", "Old", "APP"))
+Idents(VSMCs) <- "genotype"
+levels(Idents(VSMCs))
+
+monocytes$genotype <- NA
+monocytes$genotype[monocytes$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+monocytes$genotype[monocytes$group %in% c("WT_OF", "WT_OM")] <- "Old"
+monocytes$genotype[monocytes$group %in% c("APP_F", "APP_M")] <- "APP"
+monocytes$genotype <- factor(monocytes$genotype, levels = c("Yng", "Old", "APP"))
+Idents(monocytes) <- "genotype"
+levels(Idents(monocytes))
+
+Tcells$genotype <- NA
+Tcells$genotype[Tcells$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+Tcells$genotype[Tcells$group %in% c("WT_OF", "WT_OM")] <- "Old"
+Tcells$genotype[Tcells$group %in% c("APP_F", "APP_M")] <- "APP"
+Tcells$genotype <- factor(Tcells$genotype, levels = c("Yng", "Old", "APP"))
+Idents(Tcells) <- "genotype"
+levels(Idents(Tcells))
+
+ependymal$genotype <- NA
+ependymal$genotype[ependymal$group %in% c("WT_YF", "WT_YM")] <- "Yng"
+ependymal$genotype[ependymal$group %in% c("WT_OF", "WT_OM")] <- "Old"
+ependymal$genotype[ependymal$group %in% c("APP_F", "APP_M")] <- "APP"
+ependymal$genotype <- factor(ependymal$genotype, levels = c("Yng", "Old", "APP"))
+Idents(ependymal) <- "genotype"
+levels(Idents(ependymal))
+
+
+
+
+# convert to factor with desired order
+YngvOldvAPP$genotype <- factor(YngvOldvAPP$genotype, levels = c("Yng", "Old", "APP"))
+
+table(YngvOldvAPP$genotype, YngvOldvAPP$group, useNA = "ifany")
+
+Idents(YngvOldvAPP) <- "genotype"
+levels(Idents(YngvOldvAPP))
+APPvYng_DEGs <- FindMarkers(YngvOldvAPP, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+OldvYng_DEGs <- FindMarkers(YngvOldvAPP, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+APPvOld_DEGs <- FindMarkers(YngvOldvAPP, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+write.csv(APPvYng_DEGs, "APPvYng_DEGs.csv")
+write.csv(OldvYng_DEGs, "OldvYng_DEGs.csv")
+write.csv(APPvOld_DEGs, "APPvOld_DEGs.csv")
+
+
+
+### APP v Yng by cluster
+
+
+Idents(endothelial) <- "genotype"
+endothelial_APPvYng_DEGs <- FindMarkers(endothelial, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(oligos) <- "genotype"
+oligos_APPvYng_DEGs <- FindMarkers(oligos, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(astrocytes) <- "genotype"
+astrocytes_APPvYng_DEGs <- FindMarkers(astrocytes, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(choroid_plexus) <- "genotype"
+choroid_plexus_APPvYng_DEGs <- FindMarkers(choroid_plexus, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(neurons) <- "genotype"
+neurons_APPvYng_DEGs <- FindMarkers(neurons, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(OPCs) <- "genotype"
+OPCs_APPvYng_DEGs <- FindMarkers(OPCs, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(NPCs) <- "genotype"
+NPCs_APPvYng_DEGs <- FindMarkers(NPCs, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(macrophages) <- "genotype"
+macrophages_APPvYng_DEGs <- FindMarkers(macrophages, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(VSMCs) <- "genotype"
+VSMCs_APPvYng_DEGs <- FindMarkers(VSMCs, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(monocytes) <- "genotype"
+monocytes_APPvYng_DEGs <- FindMarkers(monocytes, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(Tcells) <- "genotype"
+Tcells_APPvYng_DEGs <- FindMarkers(Tcells, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(ependymal) <- "genotype"
+ependymal_APPvYng_DEGs <- FindMarkers(ependymal, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+Idents(microglia) <- "genotype"
+microglia_APPvYng_DEGs <- FindMarkers(microglia, ident.1 = "APP", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+
+
+write.csv(endothelial_APPvYng_DEGs, "endothelial_APPvYng_DEGs.csv")
+write.csv(oligos_APPvYng_DEGs, "oligos_APPvYng_DEGs.csv")
+write.csv(astrocytes_APPvYng_DEGs, "astrocytes_APPvYng_DEGs.csv")
+write.csv(choroid_plexus_APPvYng_DEGs, "choroid_plexus_APPvYng_DEGs.csv")
+write.csv(neurons_APPvYng_DEGs, "neurons_APPvYng_DEGs.csv")
+write.csv(OPCs_APPvYng_DEGs, "OPCs_APPvYng_DEGs.csv")
+write.csv(NPCs_APPvYng_DEGs, "NPCs_APPvYng_DEGs.csv")
+write.csv(macrophages_APPvYng_DEGs, "macrophages_APPvYng_DEGs.csv")
+write.csv(VSMCs_APPvYng_DEGs, "VSMCs_APPvYng_DEGs.csv")
+write.csv(monocytes_APPvYng_DEGs, "monocytes_APPvYng_DEGs.csv")
+write.csv(Tcells_APPvYng_DEGs, "Tcells_APPvYng_DEGs.csv")
+write.csv(ependymal_APPvYng_DEGs, "ependymal_APPvYng_DEGs.csv")
+write.csv(microglia_APPvYng_DEGs, "microglia_APPvYng_DEGs.csv")
+
+
+
+
+
+
+
+### Old v Yng by cluster
+
+
+Idents(endothelial) <- "genotype"
+endothelial_OldvYng_DEGs <- FindMarkers(endothelial, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(oligos) <- "genotype"
+oligos_OldvYng_DEGs <- FindMarkers(oligos, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(astrocytes) <- "genotype"
+astrocytes_OldvYng_DEGs <- FindMarkers(astrocytes, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(choroid_plexus) <- "genotype"
+choroid_plexus_OldvYng_DEGs <- FindMarkers(choroid_plexus, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(neurons) <- "genotype"
+neurons_OldvYng_DEGs <- FindMarkers(neurons, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(OPCs) <- "genotype"
+OPCs_OldvYng_DEGs <- FindMarkers(OPCs, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(NPCs) <- "genotype"
+NPCs_OldvYng_DEGs <- FindMarkers(NPCs, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(macrophages) <- "genotype"
+macrophages_OldvYng_DEGs <- FindMarkers(macrophages, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(VSMCs) <- "genotype"
+VSMCs_OldvYng_DEGs <- FindMarkers(VSMCs, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(monocytes) <- "genotype"
+monocytes_OldvYng_DEGs <- FindMarkers(monocytes, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(Tcells) <- "genotype"
+Tcells_OldvYng_DEGs <- FindMarkers(Tcells, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(ependymal) <- "genotype"
+ependymal_OldvYng_DEGs <- FindMarkers(ependymal, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(microglia) <- "genotype"
+microglia_OldvYng_DEGs <- FindMarkers(microglia, ident.1 = "Old", ident.2 = "Yng", logfc.threshold = 0.25, min.pct = 0.1)
+
+
+
+write.csv(endothelial_OldvYng_DEGs, "endothelial_OldvYng_DEGs.csv")
+write.csv(oligos_OldvYng_DEGs, "oligos_OldvYng_DEGs.csv")
+write.csv(astrocytes_OldvYng_DEGs, "astrocytes_OldvYng_DEGs.csv")
+write.csv(choroid_plexus_OldvYng_DEGs, "choroid_plexus_OldvYng_DEGs.csv")
+write.csv(neurons_OldvYng_DEGs, "neurons_OldvYng_DEGs.csv")
+write.csv(OPCs_OldvYng_DEGs, "OPCs_OldvYng_DEGs.csv")
+write.csv(NPCs_OldvYng_DEGs, "NPCs_OldvYng_DEGs.csv")
+write.csv(macrophages_OldvYng_DEGs, "macrophages_OldvYng_DEGs.csv")
+write.csv(VSMCs_OldvYng_DEGs, "VSMCs_OldvYng_DEGs.csv")
+write.csv(monocytes_OldvYng_DEGs, "monocytes_OldvYng_DEGs.csv")
+write.csv(Tcells_OldvYng_DEGs, "Tcells_OldvYng_DEGs.csv")
+write.csv(ependymal_OldvYng_DEGs, "ependymal_OldvYng_DEGs.csv")
+write.csv(microglia_OldvYng_DEGs, "microglia_OldvYng_DEGs.csv")
+
+
+
+
+
+
+
+## DotPlots for age or app effect in cell types
+DotPlot(microglia, features = c("Spp1", "Gpnmb","Cd274","Ch25h","P2ry12","Apoe", "Trem2", "Tyrobp", "Csf1r", "Lgals3", "Aif1", "Irf5", "C1qa", "Vcam1", "Adam10"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+DotPlot(endothelial, features = c("Flt4", "Irf7", "Egfl7", "Col4a1", "Hspa12b", "Apoe", "Cdkn1a", "Cldn5", "Adam10", "Jag1", "Vwf", "Slc2a1","Cav1","Cxcl12","Fzd4"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+DotPlot(oligos, features = c("B2m", "Cd9", "Cebpd", "Sqstm1", "Stat1", "C4a", "Grn", "Stat3", "Ctsd", "Olig1", "Cryab", "Apoe","Olig2","Ndrg1","Bin1"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+DotPlot(astrocytes, features = c("Gfap", "Apoe", "Clu", "Stat3", "Ifitm3", "Tpt1", "Cox4i1", "Fth1", "Nrcam", "Eef1a1", "Slc6a11", "Gja1","Dio2","Aldh1l1","Nfkbia"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+DotPlot(choroid_plexus, features = c("mt-Nd1", "mt-cytb", "Slc25a5", "Atp1b1", "Pdgfa", "A2m", "Igfbo2", "Hspa5", "Mfge8", "Grn", "Cdh1", "Sparc","Slc22a8","Gpx3","Piezo1"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+DotPlot(neurons, features = c("Apoe", "Tyrob", "C1qa", "Trem2", "Ctss", "Mbp", "Map2", "Atp1a3", "Thy1", "Qk", "Bin1", "Serf2","Ptprz1","Rims1","Pld3"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+
+
+
+
+
+### APP v Old by cluster
+Idents(microglia) <- "genotype"
+microglia_APPvOld_DEGs <- FindMarkers(microglia, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(endothelial) <- "genotype"
+endothelial_APPvOld_DEGs <- FindMarkers(endothelial, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(oligos) <- "genotype"
+oligos_APPvOld_DEGs <- FindMarkers(oligos, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(astrocytes) <- "genotype"
+astrocytes_APPvOld_DEGs <- FindMarkers(astrocytes, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(choroid_plexus) <- "genotype"
+choroid_plexus_APPvOld_DEGs <- FindMarkers(choroid_plexus, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(neurons) <- "genotype"
+neurons_APPvOld_DEGs <- FindMarkers(neurons, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(OPCs) <- "genotype"
+OPCs_APPvOld_DEGs <- FindMarkers(OPCs, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(NPCs) <- "genotype"
+NPCs_APPvOld_DEGs <- FindMarkers(NPCs, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(macrophages) <- "genotype"
+macrophages_APPvOld_DEGs <- FindMarkers(macrophages, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(VSMCs) <- "genotype"
+VSMCs_APPvOld_DEGs <- FindMarkers(VSMCs, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(monocytes) <- "genotype"
+monocytes_APPvOld_DEGs <- FindMarkers(monocytes, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(Tcells) <- "genotype"
+Tcells_APPvOld_DEGs <- FindMarkers(Tcells, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+Idents(ependymal) <- "genotype"
+ependymal_APPvOld_DEGs <- FindMarkers(ependymal, ident.1 = "APP", ident.2 = "Old", logfc.threshold = 0.25, min.pct = 0.1)
+
+write.csv(microglia_APPvOld_DEGs, "microglia_APPvOld_DEGs.csv")
+write.csv(endothelial_APPvOld_DEGs, "endothelial_APPvOld_DEGs.csv")
+write.csv(oligos_APPvOld_DEGs, "oligos_APPvOld_DEGs.csv")
+write.csv(astrocytes_APPvOld_DEGs, "astrocytes_APPvOld_DEGs.csv")
+write.csv(choroid_plexus_APPvOld_DEGs, "choroid_plexus_APPvOld_DEGs.csv")
+write.csv(neurons_APPvOld_DEGs, "neurons_APPvOld_DEGs.csv")
+write.csv(OPCs_APPvOld_DEGs, "OPCs_APPvOld_DEGs.csv")
+write.csv(NPCs_APPvOld_DEGs, "NPCs_APPvOld_DEGs.csv")
+write.csv(macrophages_APPvOld_DEGs, "macrophages_APPvOld_DEGs.csv")
+write.csv(VSMCs_APPvOld_DEGs, "VSMCs_APPvOld_DEGs.csv")
+write.csv(monocytes_APPvOld_DEGs, "monocytes_APPvOld_DEGs.csv")
+write.csv(Tcells_APPvOld_DEGs, "Tcells_APPvOld_DEGs.csv")
+write.csv(ependymal_APPvOld_DEGs, "ependymal_APPvOld_DEGs.csv")
+
+
+
+## DotPlots for OvY, AvY, AvO effect in cell types
+
+#Figures 2 E-G
+DotPlot( microglia, features = c( # OvY Only "Rgs10", "Qk", "Cyth4", # OvY + AvY "Rhob", "Csf1r", "Fkbp5", # AvY Only "Pebp1", "Vasp", "Unc93b1", # OvY + AvO "Hexb", "C1qa", "Fcrls", # All "Apoe", "Tyrobp", "Axl", # AvY + AvO "Ccl6", "H2-Ab1", "Gnas", # AvO "Dpy19l4", "St6gal1", "Eef1d" ), cols = c("blue", "red"), dot.scale = 10 ) + theme( axis.text.x = element_text( angle = 45, hjust = 1, size = 8 ) )
+  
+  DotPlot(
+    endothelial,
+    features = c(
+      # OvY Only
+      "Slc2a1", "Fth1", "Igf1r",
+      
+      # OvY + AvY
+      "H2-Q7", "Ifit3", "Tek",
+      
+      # AvY Only
+      "Egfl7", "Mapk3", "Actg1",
+      
+      # OvY + AvO
+      "Klf6", "Spock2", "Itm2a",
+      
+      # All
+      "Apoe", "Cdkn1a", "Cldn5",
+      
+      # AvY + AvO
+      "Igfbp7", "Sparc", "H2-K1",
+      
+      # AvO
+      "Bmpr2", "Notch1", "Iqgap1"
+    ),
+    cols = c("blue", "red"),
+    dot.scale = 8
+  ) +
+    theme(
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 1,
+        size = 7
+      )
+    )
+  
+  
+  DotPlot(
+    oligos,
+    features = c(
+      # OvY Only
+      "Scd1", "Ide", "Dusp26",
+      
+      # OvY + AvY
+      "Serpina3n", "Grn", "Stat3",
+      
+      # AvY Only
+      "Cldn11", "Ifi27", "Olig2",
+      
+      # OvY + AvO
+      "Cryab", "Apoe", "Bin1",
+      
+      # All
+      "Olig1", "Tubb4a", "Klf13",
+      
+      # AvY + AvO
+      "B2m", "Cd9", "Cebpd",
+      
+      # AvO
+      "Mobp", "Cnp", "Dpysl2"
+    ),
+    cols = c("blue", "red"),
+    dot.scale = 8
+  ) +
+    theme(
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 1,
+        size = 7
+      )
+    )
+  
+  
+  DotPlot(
+    astrocytes,
+    features = c(
+      # OvY Only
+      "Gja1","Mfge8","Vcam1",
+      
+      # OvY + AvY
+      "Slco1c1","Mfsd2a","Fzd2",
+      
+      # AvY Only
+      "Ifi27","Csf1","Sparc",
+      
+      # OvY + AvO
+      "Sparcl1","Slc6a11","Prnp",
+      
+      # All
+      "Tsc22d3","C4b","Ctsd",
+      
+      # AvY + AvO
+      "Gfap","Apoe","Clu",
+      
+      # AvO
+      "Aldoc","Slc1a3","Atp1a2"
+    ),
+    cols = c("blue", "red"),
+    dot.scale = 8
+  ) +
+    theme(
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 1,
+        size = 7
+      )
+    )
+  
+  
+  DotPlot(
+    choroid_plexus,
+    features = c(
+      # OvY Only
+      "Npr3","Cldn2","Aqp1",
+      
+      # OvY + AvY
+      "Hopx","Maob","Igfbp7",
+      
+      # AvY Only
+      "Atp1b1","Slc38a3","Col1a2",
+      
+      # OvY + AvO
+      "B4galnt3","Pcp4","Sult1c1",
+      
+      # All
+      "A2m","Igfbp2","Mfge8",
+      
+      # AvY + AvO
+      "Gnas","Id3","Cst3",
+      
+      # AvO
+      "Apoe","Hspa8","Abca1"
+    ),
+    cols = c("blue", "red"),
+    dot.scale = 8
+  ) +
+    theme(
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 1,
+        size = 7
+      )
+    )
+  
+  
+  DotPlot(
+    neurons,
+    features = c(
+      # OvY Only
+      "Map7d1","Rims1","Fmr1",
+      
+      # OvY + AvY
+      "Map2","Chd3","Plekhg5",
+      
+      # AvY Only
+      "Adgrb1","Unc13a","Auts2",
+      
+      # OvY + AvO
+      "Ptprz1","Bin1","Rapgef4",
+      
+      # All
+      "Qk","Pcsk2","Stxbp1",
+      
+      # AvY + AvO
+      "Hexb","Apoe","Ndrg4",
+      
+      # AvO
+      "Ddx3x","Capns1","Penk"
+    ),
+    cols = c("blue", "red"),
+    dot.scale = 8
+  ) +
+    theme(
+      axis.text.x = element_text(
+        angle = 45,
+        hjust = 1,
+        size = 7
+      )
+    )
+  
+  
+  
+  
+ 
+  
+  
+  
+  
+  
+  
+  ###### Analysis of sex effects within groups by cluster (Yng_FvM, Old_FvM, APP_FvM) ######
+  
+  ### APP_F v APP_M by cluster
+  
+  
+  Idents(endothelial) <- "group"
+  endothelial_APP_FvM_DEGs <- FindMarkers(endothelial, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(oligos) <- "group"
+  oligos_APP_FvM_DEGs <- FindMarkers(oligos, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(astrocytes) <- "group"
+  astrocytes_APP_FvM_DEGs <- FindMarkers(astrocytes, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(choroid_plexus) <- "group"
+  choroid_plexus_APP_FvM_DEGs <- FindMarkers(choroid_plexus, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(neurons) <- "group"
+  neurons_APP_FvM_DEGs <- FindMarkers(neurons, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(OPCs) <- "group"
+  OPCs_APP_FvM_DEGs <- FindMarkers(OPCs, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(NPCs) <- "group"
+  NPCs_APP_FvM_DEGs <- FindMarkers(NPCs, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(macrophages) <- "group"
+  macrophages_APP_FvM_DEGs <- FindMarkers(macrophages, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(VSMCs) <- "group"
+  VSMCs_APP_FvM_DEGs <- FindMarkers(VSMCs, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(monocytes) <- "group"
+  monocytes_APP_FvM_DEGs <- FindMarkers(monocytes, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Tcells) <- "group"
+  Tcells_APP_FvM_DEGs <- FindMarkers(Tcells, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(ependymal) <- "group"
+  ependymal_APP_FvM_DEGs <- FindMarkers(ependymal, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  Idents(microglia) <- "group"
+  microglia_APP_FvM_DEGs <- FindMarkers(microglia, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  write.csv(microglia_APP_FvM_DEGs, "microglia_APPFvM_DEGs.csv")
+  
+  
+  
+  write.csv(endothelial_APP_FvM_DEGs, "endothelial_APPFvM_DEGs.csv")
+  write.csv(oligos_APP_FvM_DEGs, "oligos_APPFvM_DEGs.csv")
+  write.csv(astrocytes_APP_FvM_DEGs, "astrocytes_APPFvM_DEGs.csv")
+  write.csv(choroid_plexus_APP_FvM_DEGs, "choroid_plexus_APPFvM_DEGs.csv")
+  write.csv(neurons_APP_FvM_DEGs, "neurons_APPFvM_DEGs.csv")
+  write.csv(OPCs_APP_FvM_DEGs, "OPCs_APPFvM_DEGs.csv")
+  write.csv(NPCs_APP_FvM_DEGs, "NPCs_APPFvM_DEGs.csv")
+  write.csv(macrophages_APP_FvM_DEGs, "macrophages_APPFvM_DEGs.csv")
+  write.csv(VSMCs_APP_FvM_DEGs, "VSMCs_APPFvM_DEGs.csv")
+  write.csv(monocytes_APP_FvM_DEGs, "monocytes_APPFvM_DEGs.csv")
+  write.csv(Tcells_APP_FvM_DEGs, "Tcells_APPFvM_DEGs.csv")
+  write.csv(ependymal_APP_FvM_DEGs, "ependymal_APPFvM_DEGs.csv")
+  
+  
+  
+  
+  
+  
+  ### WT_OF v WT_OM by cluster
+  
+  
+  Idents(endothelial) <- "group"
+  endothelial_Old_FvM_DEGs <- FindMarkers(endothelial, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(oligos) <- "group"
+  oligos_Old_FvM_DEGs <- FindMarkers(oligos, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(astrocytes) <- "group"
+  astrocytes_Old_FvM_DEGs <- FindMarkers(astrocytes, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(choroid_plexus) <- "group"
+  choroid_plexus_Old_FvM_DEGs <- FindMarkers(choroid_plexus, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(neurons) <- "group"
+  neurons_Old_FvM_DEGs <- FindMarkers(neurons, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(OPCs) <- "group"
+  OPCs_Old_FvM_DEGs <- FindMarkers(OPCs, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(NPCs) <- "group"
+  NPCs_Old_FvM_DEGs <- FindMarkers(NPCs, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(macrophages) <- "group"
+  macrophages_Old_FvM_DEGs <- FindMarkers(macrophages, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(VSMCs) <- "group"
+  VSMCs_Old_FvM_DEGs <- FindMarkers(VSMCs, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(monocytes) <- "group"
+  monocytes_Old_FvM_DEGs <- FindMarkers(monocytes, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Tcells) <- "group"
+  Tcells_Old_FvM_DEGs <- FindMarkers(Tcells, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(ependymal) <- "group"
+  ependymal_Old_FvM_DEGs <- FindMarkers(ependymal, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  Idents(microglia) <- "group"
+  microglia_Old_FvM_DEGs <- FindMarkers(microglia, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  write.csv(microglia_Old_FvM_DEGs, "microglia_OldFvM_DEGs.csv")
+  
+  
+  write.csv(endothelial_Old_FvM_DEGs, "endothelial_OldFvM_DEGs.csv")
+  write.csv(oligos_Old_FvM_DEGs, "oligos_OldFvM_DEGs.csv")
+  write.csv(astrocytes_Old_FvM_DEGs, "astrocytes_OldFvM_DEGs.csv")
+  write.csv(choroid_plexus_Old_FvM_DEGs, "choroid_plexus_OldFvM_DEGs.csv")
+  write.csv(neurons_Old_FvM_DEGs, "neurons_OldFvM_DEGs.csv")
+  write.csv(OPCs_Old_FvM_DEGs, "OPCs_OldFvM_DEGs.csv")
+  write.csv(NPCs_Old_FvM_DEGs, "NPCs_OldFvM_DEGs.csv")
+  write.csv(macrophages_Old_FvM_DEGs, "macrophages_OldFvM_DEGs.csv")
+  write.csv(VSMCs_Old_FvM_DEGs, "VSMCs_OldFvM_DEGs.csv")
+  write.csv(monocytes_Old_FvM_DEGs, "monocytes_OldFvM_DEGs.csv")
+  write.csv(Tcells_Old_FvM_DEGs, "Tcells_OldFvM_DEGs.csv")
+  write.csv(ependymal_Old_FvM_DEGs, "ependymal_OldFvM_DEGs.csv")
+  
+  
+  
+  ### WT_YF v WT_YM by cluster
+  
+  
+  Idents(endothelial) <- "group"
+  endothelial_Yng_FvM_DEGs <- FindMarkers(endothelial, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(oligos) <- "group"
+  oligos_Yng_FvM_DEGs <- FindMarkers(oligos, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(astrocytes) <- "group"
+  astrocytes_Yng_FvM_DEGs <- FindMarkers(astrocytes, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(choroid_plexus) <- "group"
+  choroid_plexus_Yng_FvM_DEGs <- FindMarkers(choroid_plexus, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(neurons) <- "group"
+  neurons_Yng_FvM_DEGs <- FindMarkers(neurons, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(OPCs) <- "group"
+  OPCs_Yng_FvM_DEGs <- FindMarkers(OPCs, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(NPCs) <- "group"
+  NPCs_Yng_FvM_DEGs <- FindMarkers(NPCs, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(macrophages) <- "group"
+  macrophages_Yng_FvM_DEGs <- FindMarkers(macrophages, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(monocytes) <- "group"
+  Idents(VSMCs) <- "group"
+  VSMCs_Yng_FvM_DEGs <- FindMarkers(VSMCs, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  monocytes_Yng_FvM_DEGs <- FindMarkers(monocytes, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Tcells) <- "group"
+  Tcells_Yng_FvM_DEGs <- FindMarkers(Tcells, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(ependymal) <- "group"
+  ependymal_Yng_FvM_DEGs <- FindMarkers(ependymal, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  Idents(microglia) <- "group"
+  microglia_Yng_FvM_DEGs <- FindMarkers(microglia, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  write.csv(microglia_Yng_FvM_DEGs, "microglia_YngFvM_DEGs.csv")
+  
+  
+  
+  write.csv(endothelial_Yng_FvM_DEGs, "endothelial_YngFvM_DEGs.csv")
+  write.csv(oligos_Yng_FvM_DEGs, "oligos_YngFvM_DEGs.csv")
+  write.csv(astrocytes_Yng_FvM_DEGs, "astrocytes_YngFvM_DEGs.csv")
+  write.csv(choroid_plexus_Yng_FvM_DEGs, "choroid_plexus_YngFvM_DEGs.csv")
+  write.csv(neurons_Yng_FvM_DEGs, "neurons_YngFvM_DEGs.csv")
+  write.csv(OPCs_Yng_FvM_DEGs, "OPCs_YngFvM_DEGs.csv")
+  write.csv(NPCs_Yng_FvM_DEGs, "NPCs_YngFvM_DEGs.csv")
+  write.csv(macrophages_Yng_FvM_DEGs, "macrophages_YngFvM_DEGs.csv")
+  write.csv(VSMCs_Yng_FvM_DEGs, "VSMCs_YngFvM_DEGs.csv")
+  write.csv(monocytes_Yng_FvM_DEGs, "monocytes_YngFvM_DEGs.csv")
+  write.csv(Tcells_Yng_FvM_DEGs, "Tcells_YngFvM_DEGs.csv")
+  write.csv(ependymal_Yng_FvM_DEGs, "ependymal_YngFvM_DEGs.csv")
+  
+  
+  
+  ## DotPlots for sex diff in cell types
+  DotPlot(microglia, features = c("Nlrp3", "Selenof", "Serf2", "Selenow", "Lgals3bp", "Slc2a1", "Itgax", "Spp1", "Kdm6a", "Mrc2", "Bin1", "Aif1"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(endothelial, features = c("Mfsd2a", "Gbp3", "Thbd", "Kdm6a", "Adamts1", "Zfp36", "Dll4", "Vwf", "Uty", "Serpinh1", "Notch1", "Pdgfb"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(oligos, features = c("Epas1", "Kdm5c", "Hexa", "Actg1", "Kdm6a", "Sparc", "Nkx6-2", "Mal", "Mbp", "Apoe", "Uty", "Cdkn1b","Abcg1"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(astrocytes, features = c("Aqp4", "Kcnj10", "Itgb5", "Sod3", "Ddx3x", "Ctsd", "Mfge8", "Sparc", "Uty", "S1pr1", "Tlr3"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(choroid_plexus, features = c("Aqp1", "Manf", "Tgfb2", "Prlr", "Cd63", "Glrx", "Igfbp7", "Clu", "Sod3", "App", "Itgb8","Qk","Rfx3"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(neurons, features = c("Ddx3x", "Fth1", "Dkk3", "Cxcl14", "Uty", "Apoe", "Mt1"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  
+  #Figure 3C
+  DotPlot(microglia, features = c("Kdm6a", "Actg1", "Ddx3x", 
+                                  "Tardbp", "Son", "Csf1", 
+                                  "Itgax", "Spp1", "Mt1", "Slc2a1", 
+                                  "Tpi1", "Bcl2", "Vegfa", "Igf1"), 
+          cols = c("blue", "red"), dot.scale = 10)+ 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  
+  
+  
+  
+  
+  
+  
+  ### Checking Neuron type ###
+  
+  library(Seurat)
+  library(ggplot2)
+  
+  # Set identities
+  Idents(YngvOldvAPP) <- "seurat_clusters"
+  
+  # Define gene lists
+  excitatory_synaptic_genes <- c("Snap25", "Hpca","Nrgn", "Camk2a","Camk2b", "Dlg4", "Syngap1", "Syp", "Vamp2", "Syn1", "Syn2", "Homer1","Gria1", "Grin1", "Slc17a7")
+  
+  inhibitory_synaptic_genes <- c("Gad1", "Gad2", "Slc32a1", "Slc6a1", "Pvalb", "Sst", "Vip", "Reln", "Lamp5", "Nos1", "Tac1", "Calb2")
+  
+  soma_neuronal_genes <- c("Rbfox3", "Tubb3", "Neurod1", "Neurod2", "Satb2")
+  
+  # Keep only genes present in object
+  excitatory_synaptic_genes <- excitatory_synaptic_genes[
+    excitatory_synaptic_genes %in% rownames(YngvOldvAPP)
+  ]
+  
+  inhibitory_synaptic_genes <- inhibitory_synaptic_genes[
+    inhibitory_synaptic_genes %in% rownames(YngvOldvAPP)
+  ]
+  
+  soma_neuronal_genes <- soma_neuronal_genes[
+    soma_neuronal_genes %in% rownames(YngvOldvAPP)
+  ]
+  
+  # Add module scores
+  YngvOldvAPP <- AddModuleScore(
+    object = YngvOldvAPP,
+    features = list(excitatory_synaptic_genes),
+    name = "ExcitatorySynapticScore"
+  )
+  
+  YngvOldvAPP <- AddModuleScore(
+    object = YngvOldvAPP,
+    features = list(inhibitory_synaptic_genes),
+    name = "InhibitorySynapticScore"
+  )
+  
+  YngvOldvAPP <- AddModuleScore(
+    object = YngvOldvAPP,
+    features = list(soma_neuronal_genes),
+    name = "SomaNeuronalScore"
+  )
+  
+  # DotPlot of module scores by cluster
+  DotPlot(
+    object = YngvOldvAPP,
+    features = c("ExcitatorySynapticScore1", "InhibitorySynapticScore1", "SomaNeuronalScore1"),
+    group.by = "seurat_clusters",
+    dot.scale = 10
+  ) +
+    RotatedAxis() +
+    scale_color_gradient(low = "blue", high = "red") +
+    theme_classic()
+  
+  
+  ## Remove a 13 mo WT_M to balance age representation ##
+  
+  YngvOldvAPP_filtered <- subset(
+    YngvOldvAPP,
+    subset = orig.ident != "WT2_M"
+  )
+  
+  
+  table(YngvOldvAPP_filtered$orig.ident)
+  
+  #Did not rescale to not alter previous analyses, generated this .rds file to balance GE analyses for Yng FvM 
+  saveRDS(YngvOldvAPP_filtered, "YngvOldvAPP_filtered.rds")
+  
+  
+  
+  
+  
+  # Define the new cluster identities (in order of cluster numbers 0 to 13)
+  cluster_labels <- c(
+    "0_MG_A",           # Cluster 0
+    "1_MG_B",           # Cluster 1
+    "2_EC",             # Cluster 2
+    "3_OLG",            # Cluster 3
+    "4_ASC",            # Cluster 4
+    "5_CPC",            # Cluster 5
+    "6_NEUR",           # Cluster 6
+    "7_OPC",            # Cluster 7
+    "8_NPC",            # Cluster 8
+    "9_MAC",            # Cluster 9
+    "10_VSMC",          # Cluster 10
+    "11_TC",            # Cluster 11
+    "12_VLMC",	      # Cluster 12
+    "13_EPC"	      # Cluster 13
+  )
+  
+  # Map cluster numbers (0:13) to their corresponding labels
+  names(cluster_labels) <- as.character(0:13)
+  
+  # Apply the labels to your Seurat object
+  names(cluster_labels) <- levels(YngvOldvAPP_filtered)
+  YngvOldvAPP_filtered <- RenameIdents(YngvOldvAPP_filtered, cluster_labels)
+  
+  DimPlot(YngvOldvAPP_filtered, label = TRUE)
+  
+  
+  microglia <-subset(YngvOldvAPP_filtered, idents=c("0_MG_A","1_MG_B"))
+  endothelial  <- subset(YngvOldvAPP_filtered, idents = "2_EC")
+  oligos <- subset(YngvOldvAPP_filtered, idents = "3_OLG")
+  astrocytes  <- subset(YngvOldvAPP_filtered, idents = "4_ASC")
+  choroid_plexus <- subset(YngvOldvAPP_filtered, idents = "5_CPC")
+  neurons  <- subset(YngvOldvAPP_filtered, idents = "6_NEUR")
+  
+  
+  
+  ### WT_YF v WT_YM by cluster
+  Idents(microglia) <- "group"
+  filt_microglia_Yng_FvM_DEGs <- FindMarkers(microglia, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(endothelial) <- "group"
+  filt_endothelial_Yng_FvM_DEGs <- FindMarkers(endothelial, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(oligos) <- "group"
+  filt_oligos_Yng_FvM_DEGs <- FindMarkers(oligos, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(astrocytes) <- "group"
+  filt_astrocytes_Yng_FvM_DEGs <- FindMarkers(astrocytes, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(choroid_plexus) <- "group"
+  filt_choroid_plexus_Yng_FvM_DEGs <- FindMarkers(choroid_plexus, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(neurons) <- "group"
+  filt_neurons_Yng_FvM_DEGs <- FindMarkers(neurons, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  write.csv(filt_microglia_Yng_FvM_DEGs, "filt_microglia_YngFvM_DEGs.csv")
+  write.csv(filt_endothelial_Yng_FvM_DEGs, "filt_endothelial_YngFvM_DEGs.csv")
+  write.csv(filt_oligos_Yng_FvM_DEGs, "filt_oligos_YngFvM_DEGs.csv")
+  write.csv(filt_astrocytes_Yng_FvM_DEGs, "filt_astrocytes_YngFvM_DEGs.csv")
+  write.csv(filt_choroid_plexus_Yng_FvM_DEGs, "filt_choroid_plexus_YngFvM_DEGs.csv")
+  write.csv(filt_neurons_Yng_FvM_DEGs, "filt_neurons_YngFvM_DEGs.csv")
+  
+  
+  
+  ## DotPlots for sex diff in cell types
+  DotPlot(microglia, features = c("Nlrp3", "Selenof", "Serf2", "Selenow", "Lgals3bp", "Slc2a1", "Itgax", "Spp1", "Kdm6a", "Mrc2", "Dnajb1", "Hsph1","Ccl12","Tgm2","Cebpb"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(endothelial, features = c("Mfsd2a", "Gbp3", "Thbd", "Kdm6a", "Adamts1", "Zfp36", "Dll4", "Vwf", "Uty", "Serpinh1", "Notch1", "Pdgfb"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(oligos, features = c("Epas1", "Kdm5c", "Hexa", "Actg1", "Kdm6a", "Sparc", "Nkx6-2", "Mal", "Mbp", "Apoe", "Uty", "Cdkn1b","Abcg1"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(astrocytes, features = c("Aqp4", "Kcnj10", "Itgb5", "Sod3", "Ddx3x", "Ctsd", "Mfge8", "Sparc", "Uty", "S1pr1", "Tlr3"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(choroid_plexus, features = c("Aqp1", "Manf", "Tgfb2", "Prlr", "Cd63", "Glrx", "Igfbp7", "Clu", "Sod3", "App", "Itgb8","Qk","Rfx3"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(neurons, features = c("Ddx3x", "Fth1", "Dkk3", "Cxcl14", "Uty", "Apoe", "Mt1"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  
+  
+  
+  
+  
+  
+  ######### II. Subset MICROGLIA for reclustering ############
+  
+  
+  YngvOldvAPP <- ReadRDS("YngvOldvAPP.rds")
+  
+  Idents(YngvOldvAPP) <- "seurat_clusters"
+  
+  
+  DotPlot(YngvOldvAPP, features = c("Tmem119", "P2ry12", "Itgax", "Trem2", "Adgrf5", "Mog", "Slc1a2", "Kl", "Snap25", "Tnr", "Cd24a", "Mrc1", "Vtn", "Itgal", "Col6a2", "Lgals3", "Foxj1"), cols = c("blue", "red"), dot.scale = 10)
+  
+  
+  DotPlot(YngvOldvAPP, features = c("Aif1", "Itgam", "Tmem119", "P2ry12", "Hexb", "Siglech", "Trem2"), 
+          cols = c("blue", "red"), dot.scale = 10)
+  
+  DotPlot(YngvOldvAPP, features = c("Aif1", "Lyz1", "Msr1", "Mog", "Gfap", "Cdh5", "Clic6", "Otx2", "Snap25","Hba-a2","Hbb-bs","Hbb-bt"), 
+          cols = c("blue", "red"), dot.scale = 10)
+  
+  YngvOldvAPP_microglia <- subset(YngvOldvAPP, idents = c("0", "1","9","12"))
+  
+  YngvOldvAPP_microglia <- ScaleData(YngvOldvAPP_microglia, verbose = FALSE)
+  YngvOldvAPP_microglia <- RunPCA(YngvOldvAPP_microglia, npcs = 20, verbose = FALSE)
+  YngvOldvAPP_microglia <- RunUMAP(YngvOldvAPP_microglia, reduction = "pca", dims = 1:20)
+  YngvOldvAPP_microglia <- FindNeighbors(YngvOldvAPP_microglia, reduction = "pca", dims = 1:20)
+  YngvOldvAPP_microglia <- FindClusters(YngvOldvAPP_microglia, resolution = 0.3)
+  
+  
+  DotPlot(YngvOldvAPP_microglia, features = c("Aif1", "Tmem119", "P2ry12", "Lyz1", "Msr1", "Mog", "Gfap", "Cdh5", "Clic6", "Otx2", "Snap25","Hba-a2","Hbb-bs","Hbb-bt"), cols = c("blue", "red"), dot.scale = 10)
+  
+  YngvOldvAPP_microgliav2 <- subset(YngvOldvAPP_microglia, idents = c("0", "1", "2", "3", "4", "5", "6", "8", "11"))
+  
+  YngvOldvAPP_microgliav2 <- ScaleData(YngvOldvAPP_microgliav2, verbose = FALSE)
+  YngvOldvAPP_microgliav2 <- RunPCA(YngvOldvAPP_microgliav2, npcs = 20, verbose = FALSE)
+  YngvOldvAPP_microgliav2 <- RunUMAP(YngvOldvAPP_microgliav2, reduction = "pca", dims = 1:20)
+  YngvOldvAPP_microgliav2 <- FindNeighbors(YngvOldvAPP_microgliav2, reduction = "pca", dims = 1:20)
+  YngvOldvAPP_microgliav2 <- FindClusters(YngvOldvAPP_microgliav2, resolution = 0.3)
+  
+  DotPlot(YngvOldvAPP_microgliav2, features = c("Aif1", "Tmem119", "P2ry12", "Lyz1", "Msr1", "Mog", "Gfap", "Cdh5", "Clic6", "Otx2", "Snap25","Hba-a2","Hbb-bs","Hbb-bt"), cols = c("blue", "red"), dot.scale = 10)
+  
+  # Identify marker genes distinguishing clusters
+  YngvOldvAPP_microgliav2 <- FindAllMarkers(
+    YngvOldvAPP_microgliav2, only.pos = TRUE, 
+    min.pct = 0.01, logfc.threshold = 0.25)
+  
+  # Save marker genes to CSV
+  write.csv(YngvOldvAPP_microgliav2, "YngvOldvAPP_microgliav2_markers.csv")
+  
+  saveRDS(YngvOldvAPP_microgliav2, "YngvOldvAPP_microgliav2.rds")
+  
+  DotPlot(YngvOldvAPP_microgliav2, features = c("Aif1", "Tmem119", "P2ry12", "Lyz1", "Msr1", "Mog", "Gfap", "Cdh5", "Clic6", "Otx2", "Snap25","Hba-a2","Hbb-bs","Hbb-bt"), cols = c("blue", "red"), dot.scale = 10)
+  
+  gene_lists <- list(Homeo = c("Crybb1", "Tmem119","P2ry12","Csf1r","Siglech"), S1_DAM = c("Tyrobp","Ctsb","Ctsd","Apoe","B2m","Fth1","Lyz2"), S2_DAM = c("Trem2","Axl","Cst7","Ctsl","Lpl","Cd9","Csf1","Ccl6","Itgax","Timp2"), LDAM =c("Cd63","Arhgap19","Ldhb","Plin2","Plin3","Acly","Abhd4","Rab7"), IRM = c("Ifit3","Irf7","Ifit2","Ifitm3"))
+  
+  
+  YngvOldvAPP_microgliav2 <- AddModuleScore(YngvOldvAPP_microgliav2, features = gene_lists, name = "Signature")
+  
+  
+  
+  DotPlot(YngvOldvAPP_microgliav2, features = c("Signature1","Signature2","Signature3","Signature4","Signature5","Tmem119", "Trem2","Irf7","Snap25","Slc1a2","Alas2"), cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+  
+  
+  YngvOldvAPP_microgliav2$group <- factor(
+    YngvOldvAPP_microgliav2$group,
+    levels = c(
+      "WT_YF", "WT_YM",
+      "WT_OF", "WT_OM",
+      "APP_F", "APP_M"
+    )
+  )
+  
+  senescence_genes <- list(
+    Senescence = c(
+      "Cdkn2a","Cdkn1a","Trp53",
+      "Il6","Il1b","Tnf",
+      "Ccl2","Cxcl10",
+      "Mmp9",
+      "Gadd45a","Ddit3",
+      "Glb1","Lamp1",
+      "Apoe","Lpl","Cst7","Lgals3"
+    )
+  )
+  
+  YngvOldvAPP_microgliav2 <- AddModuleScore(
+    YngvOldvAPP_microgliav2,
+    features = senescence_genes,
+    name = "SenScore"
+  )
+  
+  
+  DotPlot(
+    YngvOldvAPP_microgliav2,
+    features = "SenScore1",
+    group.by = "group",
+    cols = c("blue", "red"),
+    dot.scale = 10
+  ) +
+    RotatedAxis()
+  
+  ### Assign cluster names
+  # Define the new cluster identities (in order of cluster numbers 0 to 8)
+  microglia_cluster_labels <- c(
+    "0_Hom_A",          # Cluster 0
+    "1_Hom_B",          # Cluster 1
+    "2_S1_DAM",         # Cluster 2
+    "3_S2_DAM",         # Cluster 3
+    "4_IRM",            # Cluster 4
+    "5_Old_DAM",        # Cluster 5
+    "6_Snap25",         # Cluster 6
+    "7_Slc2a1",         # Cluster 7
+    "8_Alas"            # Cluster 8
+  )
+  
+  # Map cluster numbers (0:8) to their corresponding labels
+  names(microglia_cluster_labels) <- as.character(0:8)
+  
+  # Apply the labels to your Seurat object
+  names(microglia_cluster_labels) <- levels(YngvOldvAPP_microgliav2)
+  YngvOldvAPP_microgliav2 <- RenameIdents(YngvOldvAPP_microgliav2, microglia_cluster_labels)
+  
+  
+  groupbycluster_table <- table(YngvOldvAPP_microgliav2$seurat_clusters, YngvOldvAPP_microgliav2$group)
+  groupbycluster_df <- as.data.frame.matrix(groupbycluster_table)
+  write.csv(groupbycluster_df, file = "groupbycluster_by_group_counts.csv", row.names = TRUE)
+  
+  
+  ### subset phenotypes
+  Hom_A <- subset(YngvOldvAPP_microgliav2, idents= "0_Hom_A")
+  Hom_B <- subset(YngvOldvAPP_microgliav2, idents= "1_Hom_B")
+  S1_DAM  <- subset(YngvOldvAPP_microgliav2, idents = "2_S1_DAM")
+  S2_DAM <- subset(YngvOldvAPP_microgliav2, idents = "3_S2_DAM")
+  IRM  <- subset(YngvOldvAPP_microgliav2, idents = "4_IRM")
+  Old_DAM <- subset(YngvOldvAPP_microgliav2, idents = "5_Old_DAM")
+  Snap25  <- subset(YngvOldvAPP_microgliav2, idents = "6_Snap25")
+  Slc2a1  <- subset(YngvOldvAPP_microgliav2, idents = "7_Slc2a1")
+  Alas2 <- subset(YngvOldvAPP_microgliav2, idents = "8_Alas")
+  
+  
+  ### WT_YF v WT_YM by microglia cluster
+  Idents(Hom_A) <- "group"
+  Hom_A_Yng_FvM_DEGs <- FindMarkers(Hom_A, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Hom_B) <- "group"
+  Hom_B_Yng_FvM_DEGs <- FindMarkers(Hom_B, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(S1_DAM) <- "group"
+  S1_DAM_Yng_FvM_DEGs <- FindMarkers(S1_DAM, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  #No counts in WT_YF or WT_YM
+  #Idents(S2_DAM) <- "group"
+  #S2_DAM_Yng_FvM_DEGs <- FindMarkers(S2_DAM, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  Idents(IRM) <- "group"
+  IRM_Yng_FvM_DEGs <- FindMarkers(IRM, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Old_DAM) <- "group"
+  Old_DAM_Yng_FvM_DEGs <- FindMarkers(Old_DAM, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Snap25) <- "group"
+  Snap25_Yng_FvM_DEGs <- FindMarkers(Snap25, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Slc2a1) <- "group"
+  Slc2a1_Yng_FvM_DEGs <- FindMarkers(Slc2a1, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Alas2) <- "group"
+  Alas2_Yng_FvM_DEGs <- FindMarkers(Alas2, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  write.csv(Hom_A_Yng_FvM_DEGs, "Hom_A_YngFvM_DEGs.csv")
+  write.csv(Hom_B_Yng_FvM_DEGs, "Hom_B_YngFvM_DEGs.csv")
+  write.csv(S1_DAM_Yng_FvM_DEGs, "S1_DAM_YngFvM_DEGs.csv")
+  #write.csv(S2_DAM_Yng_FvM_DEGs, "S2_DAM_YngFvM_DEGs.csv")
+  write.csv(IRM_Yng_FvM_DEGs, "IRM_YngFvM_DEGs.csv")
+  write.csv(Old_DAM_Yng_FvM_DEGs, "Old_DAM_YngFvM_DEGs.csv")
+  write.csv(Snap25_Yng_FvM_DEGs, "Snap25_YngFvM_DEGs.csv")
+  write.csv(Slc2a1_Yng_FvM_DEGs, "Slc2a1_YngFvM_DEGs.csv")
+  write.csv(Alas2_Yng_FvM_DEGs, "Alas2_YngFvM_DEGs.csv")
+  
+  
+  ### WT_OF v WT_OM by microglia cluster
+  Idents(Hom_A) <- "group"
+  Hom_A_Old_FvM_DEGs <- FindMarkers(Hom_A, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Hom_B) <- "group"
+  Hom_B_Old_FvM_DEGs <- FindMarkers(Hom_B, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(S1_DAM) <- "group"
+  S1_DAM_Old_FvM_DEGs <- FindMarkers(S1_DAM, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  # Too little events
+  #Idents(S2_DAM) <- "group"
+  #S2_DAM_Old_FvM_DEGs <- FindMarkers(S2_DAM, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  Idents(IRM) <- "group"
+  IRM_Old_FvM_DEGs <- FindMarkers(IRM, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Old_DAM) <- "group"
+  Old_DAM_Old_FvM_DEGs <- FindMarkers(Old_DAM, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Snap25) <- "group"
+  Snap25_Old_FvM_DEGs <- FindMarkers(Snap25, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Slc2a1) <- "group"
+  Slc2a1_Old_FvM_DEGs <- FindMarkers(Slc2a1, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Alas2) <- "group"
+  Alas2_Old_FvM_DEGs <- FindMarkers(Alas2, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  write.csv(Hom_A_Old_FvM_DEGs, "Hom_A_OldFvM_DEGs.csv")
+  write.csv(Hom_B_Old_FvM_DEGs, "Hom_B_OldFvM_DEGs.csv")
+  write.csv(S1_DAM_Old_FvM_DEGs, "S1_DAM_OldFvM_DEGs.csv")
+  #write.csv(S2_DAM_Old_FvM_DEGs, "S2_DAM_OldFvM_DEGs.csv")
+  write.csv(IRM_Old_FvM_DEGs, "IRM_OldFvM_DEGs.csv")
+  write.csv(Old_DAM_Old_FvM_DEGs, "Old_DAM_OldFvM_DEGs.csv")
+  write.csv(Snap25_Old_FvM_DEGs, "Snap25_OldFvM_DEGs.csv")
+  write.csv(Slc2a1_Old_FvM_DEGs, "Slc2a1_OldFvM_DEGs.csv")
+  write.csv(Alas2_Old_FvM_DEGs, "Alas2_OldFvM_DEGs.csv")
+  
+  ### APP_F v APP_M by microglia cluster
+  Idents(Hom_A) <- "group"
+  Hom_A_APP_FvM_DEGs <- FindMarkers(Hom_A, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Hom_B) <- "group"
+  Hom_B_APP_FvM_DEGs <- FindMarkers(Hom_B, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(S1_DAM) <- "group"
+  S1_DAM_APP_FvM_DEGs <- FindMarkers(S1_DAM, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(S2_DAM) <- "group"
+  S2_DAM_APP_FvM_DEGs <- FindMarkers(S2_DAM, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(IRM) <- "group"
+  IRM_APP_FvM_DEGs <- FindMarkers(IRM, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Old_DAM) <- "group"
+  Old_DAM_APP_FvM_DEGs <- FindMarkers(Old_DAM, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Snap25) <- "group"
+  Snap25_APP_FvM_DEGs <- FindMarkers(Snap25, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Slc2a1) <- "group"
+  Slc2a1_APP_FvM_DEGs <- FindMarkers(Slc2a1, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  Idents(Alas2) <- "group"
+  Alas2_APP_FvM_DEGs <- FindMarkers(Alas2, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  write.csv(Hom_A_APP_FvM_DEGs, "Hom_A_APPFvM_DEGs.csv")
+  write.csv(Hom_B_APP_FvM_DEGs, "Hom_B_APPFvM_DEGs.csv")
+  write.csv(S1_DAM_APP_FvM_DEGs, "S1_DAM_APPFvM_DEGs.csv")
+  write.csv(S2_DAM_APP_FvM_DEGs, "S2_DAM_APPFvM_DEGs.csv")
+  write.csv(IRM_APP_FvM_DEGs, "IRM_APPFvM_DEGs.csv")
+  write.csv(Old_DAM_APP_FvM_DEGs, "Old_DAM_APPFvM_DEGs.csv")
+  write.csv(Snap25_APP_FvM_DEGs, "Snap25_APPFvM_DEGs.csv")
+  write.csv(Slc2a1_APP_FvM_DEGs, "Slc2a1_APPFvM_DEGs.csv")
+  write.csv(Alas2_APP_FvM_DEGs, "Alas2_APPFvM_DEGs.csv")
+  
+  
+  microglia_phenotypes_counts_bysample <- table(YngvOldvAPP_microgliav2$orig.ident, YngvOldvAPP_microgliav2$seurat_clusters)
+  
+  write.csv(as.data.frame.matrix(microglia_phenotypes_counts_bysample), file = "microglia_phenotypes_counts_bysample.csv")
+  
+  
+  
+  
+  ## Remove a 13 mo WT_M to balance age representation ##
+  
+  YngvOldvAPP_microgliav2_filtered <- subset(
+    YngvOldvAPP_microgliav2,
+    subset = orig.ident != "WT2_M"
+  )
+  
+  
+  table(YngvOldvAPP_microgliav2_filtered$orig.ident)
+  #Did not rescale to not alter previous analyses, generated this .rds file to balance GE analyses for FvM Comparisons
+  saveRDS(YngvOldvAPP_microgliav2_filtered, "YngvOldvAPP_microgliav2_filtered.rds")
+  
+  
+  # Define the new cluster identities (in order of cluster numbers 0 to 8)
+  microglia_cluster_labels <- c(
+    "0_Hom_A",          # Cluster 0
+    "1_Hom_B",          # Cluster 1
+    "2_S1_DAM",         # Cluster 2
+    "3_S2_DAM",         # Cluster 3
+    "4_IRM",            # Cluster 4
+    "5_Old_DAM",        # Cluster 5
+    "6_Snap25",         # Cluster 6
+    "7_Slc2a1",         # Cluster 7
+    "8_Alas"            # Cluster 8
+  )
+  
+  # Map cluster numbers (0:8) to their corresponding labels
+  names(microglia_cluster_labels) <- as.character(0:8)
+  
+  # Apply the labels to your Seurat object
+  names(microglia_cluster_labels) <- levels(YngvOldvAPP_microgliav2_filtered)
+  YngvOldvAPP_microgliav3 <- RenameIdents(YngvOldvAPP_microgliav2_filtered, microglia_cluster_labels)
+  
+  gene_lists <- list(Homeo = c("Crybb1", "Tmem119","P2ry12","Csf1r","Siglech"), S1_DAM = c("Tyrobp","Ctsb","Ctsd","Apoe","B2m","Fth1","Lyz2"), S2_DAM = c("Trem2","Axl","Cst7","Ctsl","Lpl","Cd9","Csf1","Ccl6","Itgax","Timp2"), LDAM =c("Cd63","Arhgap19","Ldhb","Plin2","Plin3","Acly","Abhd4","Rab7"), IRM = c("Ifit3","Irf7","Ifit2","Ifitm3"))
+  
+  
+  YngvOldvAPP_microgliav2_filtered <- AddModuleScore(YngvOldvAPP_microgliav2_filtered, features = gene_lists, name = "Signature")
+  
+  #Figure 4B
+  DotPlot(YngvOldvAPP_microgliav2_filtered, features = c("Signature1","Signature2","Signature3","Signature4","Signature5","Tmem119", "Trem2","Irf7","Snap25","Slc1a2","Alas2"), cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+  
+  
+  
+  
+  ## Redo microglia recluster phenotype IPA analysis (combining phenotypes)
+  
+  # Define the new cluster identities (in order of cluster numbers 0 to 8)
+  microglia_cluster_labels <- c(
+    "0_Hom_A",          # Cluster 0
+    "1_Hom_B",          # Cluster 1
+    "2_S1_DAM",         # Cluster 2
+    "3_S2_DAM",         # Cluster 3
+    "4_IRM",            # Cluster 4
+    "5_Old_DAM",        # Cluster 5
+    "6_Snap25",         # Cluster 6
+    "7_Slc2a1",         # Cluster 7
+    "8_Alas"            # Cluster 8
+  )
+  
+  # Map cluster numbers (0:8) to their corresponding labels
+  names(microglia_cluster_labels) <- as.character(0:8)
+  
+  # Apply the labels to your Seurat object
+  names(microglia_cluster_labels) <- levels(YngvOldvAPP_microgliav2_filtered)
+  YngvOldvAPP_microgliav2_filtered <- RenameIdents(YngvOldvAPP_microgliav2_filtered, microglia_cluster_labels)
+  #Figure 4A
+  DimPlot(YngvOldvAPP_microgliav2_filtered, label = TRUE)
+  
+  #Figure 4C
+  groupbycluster_table <- table(YngvOldvAPP_microgliav2_filtered$seurat_clusters, YngvOldvAPP_microgliav2_filtered$group)
+  groupbycluster_df <- as.data.frame.matrix(groupbycluster_table)
+  write.csv(groupbycluster_df, file = "groupbycluster_by_group_counts.csv", row.names = TRUE)
+  
+  
+  
+  
+  
+  Homeo <-subset(YngvOldvAPP_microgliav2_filtered, idents=c("0_Hom_A","1_Hom_B"))
+  DAM <-subset(YngvOldvAPP_microgliav2_filtered, idents=c("2_S1_DAM","3_S2_DAM","5_Old_DAM"))
+  IRM <-subset(YngvOldvAPP_microgliav2_filtered, idents=c("4_IRM"))
+  
+  Idents(Homeo) <- "group"
+  Homeo_Yng_FvM_DEGs <- FindMarkers(Homeo, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  Homeo_Old_FvM_DEGs <- FindMarkers(Homeo, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  Homeo_APP_FvM_DEGs <- FindMarkers(Homeo, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  Idents(DAM) <- "group"
+  DAM_Yng_FvM_DEGs <- FindMarkers(DAM, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  DAM_Old_FvM_DEGs <- FindMarkers(DAM, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  DAM_APP_FvM_DEGs <- FindMarkers(DAM, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  Idents(IRM) <- "group"
+  IRM_Yng_FvM_DEGs <- FindMarkers(IRM, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0.25, min.pct = 0.1)
+  IRM_Old_FvM_DEGs <- FindMarkers(IRM, ident.1 = "WT_OF", ident.2 = "WT_OM", logfc.threshold = 0.25, min.pct = 0.1)
+  IRM_APP_FvM_DEGs <- FindMarkers(IRM, ident.1 = "APP_F", ident.2 = "APP_M", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  write.csv(Homeo_Yng_FvM_DEGs, "Homeo_Yng_FvM_DEGs.csv")
+  write.csv(Homeo_Old_FvM_DEGs, "Homeo_Old_FvM_DEGs.csv")
+  write.csv(Homeo_APP_FvM_DEGs, "Homeo_APP_FvM_DEGs.csv")
+  
+  write.csv(DAM_Yng_FvM_DEGs, "DAM_Yng_FvM_DEGs.csv")
+  write.csv(DAM_Old_FvM_DEGs, "DAM_Old_FvM_DEGs.csv")
+  write.csv(DAM_APP_FvM_DEGs, "DAM_APP_FvM_DEGs.csv")
+  
+  write.csv(IRM_Yng_FvM_DEGs, "IRM_Yng_FvM_DEGs.csv")
+  write.csv(IRM_Old_FvM_DEGs, "IRM_Old_FvM_DEGs.csv")
+  write.csv(IRM_APP_FvM_DEGs, "IRM_APP_FvM_DEGs.csv")
+  
+  
+  
+  
+  
+  ### Redo DEGs with fc=0 for sex diff in pseudobulk cell types ###
+  
+  # Define the new cluster identities (in order of cluster numbers 0 to 13)
+  cluster_labels <- c(
+    "0_MG_A",           # Cluster 0
+    "1_MG_B",           # Cluster 1
+    "2_EC",             # Cluster 2
+    "3_OLG",            # Cluster 3
+    "4_ASC",            # Cluster 4
+    "5_CPC",            # Cluster 5
+    "6_NEUR",           # Cluster 6
+    "7_OPC",            # Cluster 7
+    "8_NPC",            # Cluster 8
+    "9_MAC",            # Cluster 9
+    "10_VSMC",          # Cluster 10
+    "11_TC",            # Cluster 11
+    "12_VLMC",	      # Cluster 12
+    "13_EPC"	      # Cluster 13
+  )
+  
+  # Map cluster numbers (0:13) to their corresponding labels
+  names(cluster_labels) <- as.character(0:13)
+  
+  # Apply the labels to your Seurat object
+  names(cluster_labels) <- levels(YngvOldvAPP_filtered)
+  YngvOldvAPP_filtered <- RenameIdents(YngvOldvAPP_filtered, cluster_labels)
+  
+  
+  microglia <-subset(YngvOldvAPP_filtered, idents=c("0_MG_A","1_MG_B"))
+  endothelial  <- subset(YngvOldvAPP_filtered, idents = "2_EC")
+  oligos <- subset(YngvOldvAPP_filtered, idents = "3_OLG")
+  astrocytes  <- subset(YngvOldvAPP_filtered, idents = "4_ASC")
+  choroid_plexus <- subset(YngvOldvAPP_filtered, idents = "5_CPC")
+  neurons  <- subset(YngvOldvAPP_filtered, idents = "6_NEUR")
+  
+  # WT_YF v WT_YM by cluster
+  Idents(microglia) <- "group"
+  filt_microglia_Yng_FvM_DEGs <- FindMarkers(microglia, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0, min.pct = 0.1)
+  Idents(endothelial) <- "group"
+  filt_endothelial_Yng_FvM_DEGs <- FindMarkers(endothelial, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0, min.pct = 0.1)
+  Idents(oligos) <- "group"
+  filt_oligos_Yng_FvM_DEGs <- FindMarkers(oligos, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0, min.pct = 0.1)
+  Idents(astrocytes) <- "group"
+  filt_astrocytes_Yng_FvM_DEGs <- FindMarkers(astrocytes, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0, min.pct = 0.1)
+  Idents(choroid_plexus) <- "group"
+  filt_choroid_plexus_Yng_FvM_DEGs <- FindMarkers(choroid_plexus, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0, min.pct = 0.1)
+  Idents(neurons) <- "group"
+  filt_neurons_Yng_FvM_DEGs <- FindMarkers(neurons, ident.1 = "WT_YF", ident.2 = "WT_YM", logfc.threshold = 0, min.pct = 0.1)
+  
+  write.csv(filt_microglia_Yng_FvM_DEGs, "filt_microglia_YngFvM_DEGs_FC0.csv")
+  write.csv(filt_endothelial_Yng_FvM_DEGs, "filt_endothelial_YngFvM_DEGs_FC0.csv")
+  write.csv(filt_oligos_Yng_FvM_DEGs, "filt_oligos_YngFvM_DEGs_FC0.csv")
+  write.csv(filt_astrocytes_Yng_FvM_DEGs, "filt_astrocytes_YngFvM_DEGs_FC0.csv")
+  write.csv(filt_choroid_plexus_Yng_FvM_DEGs, "filt_choroid_plexus_YngFvM_DEGs_FC0.csv")
+  write.csv(filt_neurons_Yng_FvM_DEGs, "filt_neurons_YngFvM_DEGs_FC0.csv")
+  
+  
+  # APP_F v APP_M by cell type
+  
+  Idents(microglia) <- "group"
+  filt_microglia_APP_FvM_DEGs <- FindMarkers(
+    microglia,
+    ident.1 = "APP_F",
+    ident.2 = "APP_M",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  Idents(endothelial) <- "group"
+  filt_endothelial_APP_FvM_DEGs <- FindMarkers(
+    endothelial,
+    ident.1 = "APP_F",
+    ident.2 = "APP_M",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  Idents(oligos) <- "group"
+  filt_oligos_APP_FvM_DEGs <- FindMarkers(
+    oligos,
+    ident.1 = "APP_F",
+    ident.2 = "APP_M",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  Idents(astrocytes) <- "group"
+  filt_astrocytes_APP_FvM_DEGs <- FindMarkers(
+    astrocytes,
+    ident.1 = "APP_F",
+    ident.2 = "APP_M",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  Idents(choroid_plexus) <- "group"
+  filt_choroid_plexus_APP_FvM_DEGs <- FindMarkers(
+    choroid_plexus,
+    ident.1 = "APP_F",
+    ident.2 = "APP_M",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  Idents(neurons) <- "group"
+  filt_neurons_APP_FvM_DEGs <- FindMarkers(
+    neurons,
+    ident.1 = "APP_F",
+    ident.2 = "APP_M",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  write.csv(filt_microglia_APP_FvM_DEGs, "filt_microglia_APPFvM_DEGs_FC0.csv")
+  write.csv(filt_endothelial_APP_FvM_DEGs, "filt_endothelial_APPFvM_DEGs_FC0.csv")
+  write.csv(filt_oligos_APP_FvM_DEGs, "filt_oligos_APPFvM_DEGs_FC0.csv")
+  write.csv(filt_astrocytes_APP_FvM_DEGs, "filt_astrocytes_APPFvM_DEGs_FC0.csv")
+  write.csv(filt_choroid_plexus_APP_FvM_DEGs, "filt_choroid_plexus_APPFvM_DEGs_FC0.csv")
+  write.csv(filt_neurons_APP_FvM_DEGs, "filt_neurons_APPFvM_DEGs_FC0.csv")
+  
+  
+  # WT_OF v WT_OM by cell type
+  
+  Idents(microglia) <- "group"
+  filt_microglia_Old_FvM_DEGs <- FindMarkers(
+    microglia,
+    ident.1 = "WT_OF",
+    ident.2 = "WT_OM",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  Idents(endothelial) <- "group"
+  filt_endothelial_Old_FvM_DEGs <- FindMarkers(
+    endothelial,
+    ident.1 = "WT_OF",
+    ident.2 = "WT_OM",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  Idents(oligos) <- "group"
+  filt_oligos_Old_FvM_DEGs <- FindMarkers(
+    oligos,
+    ident.1 = "WT_OF",
+    ident.2 = "WT_OM",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  Idents(astrocytes) <- "group"
+  filt_astrocytes_Old_FvM_DEGs <- FindMarkers(
+    astrocytes,
+    ident.1 = "WT_OF",
+    ident.2 = "WT_OM",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  Idents(choroid_plexus) <- "group"
+  filt_choroid_plexus_Old_FvM_DEGs <- FindMarkers(
+    choroid_plexus,
+    ident.1 = "WT_OF",
+    ident.2 = "WT_OM",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  Idents(neurons) <- "group"
+  filt_neurons_Old_FvM_DEGs <- FindMarkers(
+    neurons,
+    ident.1 = "WT_OF",
+    ident.2 = "WT_OM",
+    logfc.threshold = 0,
+    min.pct = 0.1
+  )
+  
+  write.csv(filt_microglia_Old_FvM_DEGs, "filt_microglia_OldFvM_DEGs_FC0.csv")
+  write.csv(filt_endothelial_Old_FvM_DEGs, "filt_endothelial_OldFvM_DEGs_FC0.csv")
+  write.csv(filt_oligos_Old_FvM_DEGs, "filt_oligos_OldFvM_DEGs_FC0.csv")
+  write.csv(filt_astrocytes_Old_FvM_DEGs, "filt_astrocytes_OldFvM_DEGs_FC0.csv")
+  write.csv(filt_choroid_plexus_Old_FvM_DEGs, "filt_choroid_plexus_OldFvM_DEGs_FC0.csv")
+  write.csv(filt_neurons_Old_FvM_DEGs, "filt_neurons_OldFvM_DEGs_FC0.csv")
+  
+  
+  
+  
+  ## DotPlots for sex diff in cell types
+  DotPlot(microglia, features = c("Nlrp3", "Selenof", "Serf2", "Selenow", "Lgals3bp", "Slc2a1", "Itgax", "Spp1", "Kdm6a", "Mrc2", "Dnajb1", "Hsph1","Ccl12","Tgm2","Cebpb"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(endothelial, features = c("Mfsd2a", "Gbp3", "Thbd", "Kdm6a", "Adamts1", "Zfp36", "Dll4", "Vwf", "Uty", "Serpinh1", "Notch1", "Pdgfb"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(oligos, features = c("Epas1", "Kdm5c", "Hexa", "Actg1", "Kdm6a", "Sparc", "Nkx6-2", "Mal", "Mbp", "Apoe", "Uty", "Cdkn1b","Abcg1"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(astrocytes, features = c("Aqp4", "Kcnj10", "Itgb5", "Sod3", "Ddx3x", "Ctsd", "Mfge8", "Sparc", "Uty", "S1pr1", "Tlr3"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(choroid_plexus, features = c("Aqp1", "Manf", "Tgfb2", "Prlr", "Cd63", "Glrx", "Igfbp7", "Clu", "Sod3", "App", "Itgb8","Qk","Rfx3"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  DotPlot(neurons, features = c("Ddx3x", "Fth1", "Dkk3", "Cxcl14", "Uty", "Apoe", "Mt1"), cols = c("blue", "red"), dot.scale = 10)+ theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  
+  
+  
+  
+  
+  
+  
+  #### Begin Pseudotime trajectory analysis ###
+  # Load necessary libraries
+  library(Seurat)
+  library(monocle3)
+  library(SeuratWrappers)
+  library(ggplot2)
+  
+  # Convert Seurat object to Monocle3 CellDataSet (CDS)
+  cds <- as.cell_data_set(YngvOldvAPP_microgliav2)
+  
+  # Add UMAP embedding from Seurat to Monocle
+  reducedDims(cds)$UMAP <- Embeddings(YngvOldvAPP_microgliav2, "umap")
+  
+  colData(cds)$group <- ifelse(
+    colData(cds)$orig.ident %in% c("OF_1","OF_2","OF_3","OF_5","OF_6"),
+    "WT_OF",
+    ifelse(
+      colData(cds)$orig.ident %in% c("OM_1","OM_2","OM_3","OM_5","OM_6"),
+      "WT_OM",
+      ifelse(
+        colData(cds)$orig.ident %in% c("YF_1","YF_2"),
+        "WT_YF",
+        ifelse(
+          colData(cds)$orig.ident %in% c("YM_1","YM_2"),
+          "WT_YM",
+          ifelse(
+            colData(cds)$orig.ident %in% c("Hom1_F","Hom2_F","Hom3_F","Hom4_F","Hom5_F","Hom6_F"),
+            "APP_F",
+            ifelse(
+              colData(cds)$orig.ident %in% c("Hom2_M","Hom3_M","Hom4_M","Hom5_M","Hom6_M"),
+              "APP_M",
+              ifelse(
+                colData(cds)$orig.ident == "WT1_F",
+                "WT_YF",
+                ifelse(
+                  colData(cds)$orig.ident %in% c("WT1_M","WT2_M"),
+                  "WT_YM",
+                  NA
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+  
+  # Check group assignment
+  print(table(colData(cds)$group))
+  
+  # Add Seurat cluster metadata to the CDS
+  colData(cds)$seurat_clusters <- YngvOldvAPP_microgliav2$seurat_clusters
+  
+  # Cluster cells (if not already done in Monocle)
+  cds <- cluster_cells(cds, reduction_method = "UMAP")
+  
+  # Learn the trajectory graph
+  cds <- learn_graph(cds, use_partition = FALSE)
+  
+  # Define the root cell for pseudotime calculation (e.g., a cell from cluster "0")
+  root_cells <- which(colData(cds)$seurat_clusters == "0")[1]  # Replace "0" with the correct identifier
+  cds <- order_cells(cds, root_cells = colnames(cds)[root_cells])
+  
+  # Plot pseudotime progression on the UMAP
+  plot_cells(cds,
+             color_cells_by = "pseudotime",  # Color by pseudotime
+             label_groups_by_cluster = FALSE,
+             label_leaves = FALSE,
+             label_branch_points = FALSE,
+             show_trajectory_graph = TRUE) +
+    ggtitle("Pseudotime Progression from Homeostatic")
+  
+  
+  
+  
+  
+  library(monocle3)
+  library(SeuratWrappers)
+  library(ggplot2)
+  library(patchwork)
+  
+  # Convert Seurat object to Monocle3 CDS
+  cds <- as.cell_data_set(YngvOldvAPP_microgliav2)
+  
+  # Add Seurat UMAP
+  reducedDims(cds)$UMAP <- Embeddings(YngvOldvAPP_microgliav2, "umap")
+  
+  # Add group metadata
+  colData(cds)$group <- case_when(
+    colData(cds)$orig.ident %in% c("OF_1","OF_2","OF_3","OF_5","OF_6") ~ "WT_OF",
+    colData(cds)$orig.ident %in% c("OM_1","OM_2","OM_3","OM_5","OM_6") ~ "WT_OM",
+    colData(cds)$orig.ident %in% c("YF_1","YF_2","WT1_F") ~ "WT_YF",
+    colData(cds)$orig.ident %in% c("YM_1","YM_2","WT1_M","WT2_M") ~ "WT_YM",
+    colData(cds)$orig.ident %in% c("Hom1_F","Hom2_F","Hom3_F","Hom4_F","Hom5_F","Hom6_F") ~ "APP_F",
+    colData(cds)$orig.ident %in% c("Hom2_M","Hom3_M","Hom4_M","Hom5_M","Hom6_M") ~ "APP_M",
+    TRUE ~ NA_character_
+  )
+  
+  table(colData(cds)$group)
+  
+  # Add Seurat clusters
+  colData(cds)$seurat_clusters <- YngvOldvAPP_microgliav2$seurat_clusters
+  
+  # Cluster, learn graph, and order pseudotime using all cells
+  cds <- cluster_cells(cds, reduction_method = "UMAP")
+  cds <- learn_graph(cds, use_partition = FALSE)
+  
+  # Choose root from homeostatic cluster 0
+  root_cells <- which(colData(cds)$seurat_clusters == "0")[1]
+  
+  cds <- order_cells(
+    cds,
+    root_cells = colnames(cds)[root_cells]
+  )
+  
+  # Subset APP_F and APP_M after pseudotime has been calculated
+  cds_APP_F <- cds[, colData(cds)$group == "APP_F"]
+  cds_APP_M <- cds[, colData(cds)$group == "APP_M"]
+  
+  # Plot APP_F trajectory
+  p_APP_F <- plot_cells(
+    cds_APP_F,
+    color_cells_by = "pseudotime",
+    label_groups_by_cluster = FALSE,
+    label_leaves = FALSE,
+    label_branch_points = FALSE,
+    show_trajectory_graph = TRUE
+  ) +
+    ggtitle("APP_F Pseudotime Trajectory") +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  # Plot APP_M trajectory
+  p_APP_M <- plot_cells(
+    cds_APP_M,
+    color_cells_by = "pseudotime",
+    label_groups_by_cluster = FALSE,
+    label_leaves = FALSE,
+    label_branch_points = FALSE,
+    show_trajectory_graph = TRUE
+  ) +
+    ggtitle("APP_M Pseudotime Trajectory") +
+    theme(plot.title = element_text(hjust = 0.5))
+  
+  # Show side-by-side
+  p_APP_F + p_APP_M
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  ##### Quantitative pseudotime #####
+  #This section will generate Figure 4D
+  
+  library(Seurat)
+  library(SeuratWrappers)
+  library(monocle3)
+  library(dplyr)
+  
+  
+  cds <- as.cell_data_set(YngvOldvAPP_microgliav2_filtered)
+  
+  colnames(colData(cds))
+  
+  table(colData(cds)$group)
+  table(colData(cds)$seurat_clusters)
+  
+  cds <- cluster_cells(
+    cds,
+    reduction_method = "UMAP"
+  )
+  
+  
+  cds <- learn_graph(
+    cds,
+    close_loop = TRUE,
+    learn_graph_control = list(
+      nn.k = 100,
+      prune_graph = TRUE,
+      orthogonal_proj_tip = FALSE,
+      minimal_branch_len = 50
+    )
+  )
+  
+  homeo_genes <- c(
+    "P2ry12",
+    "Cx3cr1",
+    "Tmem119",
+    "Fcrls",
+    "Sall1",
+    "Hexb"
+  )
+  
+  YngvOldvAPP_microgliav2_filtered <-
+    AddModuleScore(
+      YngvOldvAPP_microgliav2_filtered,
+      features = list(homeo_genes),
+      name = "Homeo"
+    )
+  
+  cds <- as.cell_data_set(YngvOldvAPP_microgliav2_filtered)
+  
+  cds <- cluster_cells(
+    cds,
+    reduction_method = "UMAP"
+  )
+  
+  
+  cds <- learn_graph(
+    cds,
+    close_loop = TRUE,
+    learn_graph_control = list(
+      nn.k = 100,
+      prune_graph = TRUE,
+      orthogonal_proj_tip = FALSE,
+      minimal_branch_len = 50
+    )
+  )
+  
+  meta <- colData(cds)
+  
+  root_cells <- rownames(meta)[
+    order(meta$Homeo1, decreasing = TRUE)[1:10]
+  ]
+  
+  cds <- order_cells(
+    cds,
+    root_cells = root_cells
+  )
+  
+  plot_cells(
+    cds,
+    color_cells_by = "pseudotime",
+    label_groups_by_cluster = FALSE,
+    label_leaves = FALSE,
+    label_branch_points = FALSE
+  )
+  
+  plot_cells(
+    cds,
+    color_cells_by = "group",
+    label_groups_by_cluster = FALSE
+  )
+  
+  
+  
+  
+  
+  library(dplyr)
+  
+  plot_df <- data.frame(
+    cell = names(pseudotime(cds)),
+    pseudotime = pseudotime(cds)
+  )
+  
+  meta <- YngvOldvAPP_microgliav2_filtered@meta.data
+  
+  plot_df <- plot_df %>%
+    left_join(
+      meta %>%
+        tibble::rownames_to_column("cell") %>%
+        dplyr::select(
+          cell,
+          group,
+          seurat_clusters
+        ),
+      by = "cell"
+    )
+  
+  
+  
+  
+  library(ggplot2)
+  
+  plot_df$group <- factor(
+    plot_df$group,
+    levels = c(
+      "WT_YF",
+      "WT_YM",
+      "WT_OF",
+      "WT_OM",
+      "APP_F",
+      "APP_M"
+    )
+  )
+  
+  ggplot(
+    plot_df,
+    aes(
+      x = pseudotime,
+      y = group,
+      color = seurat_clusters
+    )
+  ) +
+    geom_jitter(
+      height = 0.25,
+      size = 0.5,
+      alpha = 0.6
+    ) +
+    geom_boxplot(
+      aes(group = group),
+      alpha = 0,
+      outlier.shape = NA,
+      color = "black"
+    ) +
+    theme_classic() +
+    labs(
+      x = "Pseudotime",
+      y = "",
+      color = "Cluster"
+    )
+  
+  library(ggbeeswarm)
+  
+  ggplot(
+    plot_df,
+    aes(
+      x = pseudotime,
+      y = group,
+      color = seurat_clusters
+    )
+  ) +
+    geom_quasirandom(
+      groupOnX = FALSE,
+      size = 0.4,
+      alpha = 0.8
+    ) +
+    geom_boxplot(
+      aes(group = group),
+      width = 0.5,
+      fill = NA,
+      color = "black",
+      outlier.shape = NA
+    ) +
+    theme_classic()
+  
+  library(ggbeeswarm)
+  
+  ggplot(
+    plot_df,
+    aes(
+      x = pseudotime,
+      y = group,
+      color = seurat_clusters
+    )
+  ) +
+    geom_quasirandom(
+      groupOnX = FALSE,
+      size = 0.4,
+      alpha = 0.8
+    ) +
+    geom_boxplot(
+      aes(group = group),
+      width = 0.5,
+      fill = NA,
+      color = "black",
+      outlier.shape = NA
+    ) +
+    theme_classic()
+  
+  
+  
+  
+  
+  library(dplyr)
+  
+  comparisons <- list(
+    c("WT_YF", "WT_YM"),
+    c("WT_OF", "WT_OM"),
+    c("APP_F", "APP_M")
+  )
+  
+  stats_list <- lapply(comparisons, function(grps) {
+    plot_df %>%
+      filter(group %in% grps) %>%
+      group_by(group) %>%
+      summarise(
+        n = n(),
+        mean_pseudotime = mean(pseudotime, na.rm = TRUE),
+        median_pseudotime = median(pseudotime, na.rm = TRUE),
+        sd_pseudotime = sd(pseudotime, na.rm = TRUE),
+        .groups = "drop"
+      ) %>%
+      mutate(comparison = paste(grps, collapse = " vs "))
+  })
+  
+  stats_summary <- bind_rows(stats_list)
+  
+  stats_summary
+  
+  test_results <- lapply(comparisons, function(grps) {
+    df_sub <- plot_df %>% filter(group %in% grps)
+    
+    wt <- wilcox.test(pseudotime ~ group, data = df_sub)
+    
+    data.frame(
+      comparison = paste(grps, collapse = " vs "),
+      p_value = wt$p.value,
+      statistic = wt$statistic
+    )
+  })
+  
+  test_summary <- bind_rows(test_results)
+  
+  test_summary
+  
+  test_summary <- lapply(comparisons, function(grps) {
+    df_sub <- plot_df %>% filter(group %in% grps)
+    
+    wt <- wilcox.test(pseudotime ~ group, data = df_sub)
+    
+    data.frame(
+      comparison = paste(grps, collapse = " vs "),
+      p_value = wt$p.value,
+      statistic = wt$statistic
+    )
+  }) %>% bind_rows()
+  
+  # add FDR correction
+  test_summary$q_value <- p.adjust(test_summary$p_value, method = "BH")
+  
+  test_summary
+  
+  
+  
+  
+  ### Cellchat analysis v2 ########
+  
+  Idents(YngvOldvAPP)<-"genotype"
+  Yng <-subset(YngvOldvAPP, idents=c("Yng"))
+  Idents(Yng)<-"seurat_clusters"
+  
+  cluster_labels <- c(
+    "0_MG_A",           # Cluster 0
+    "1_MG_B",           # Cluster 1
+    "2_EC",             # Cluster 2
+    "3_OLG",            # Cluster 3
+    "4_ASC",            # Cluster 4
+    "5_CPC",            # Cluster 5
+    "6_NEUR",           # Cluster 6
+    "7_OPC",            # Cluster 7
+    "8_NPC",            # Cluster 8
+    "9_MAC",            # Cluster 9
+    "10_VSMC",          # Cluster 10
+    "11_TC",            # Cluster 11
+    "12_VLMC",	      # Cluster 12
+    "13_EPC"	      # Cluster 13
+  )
+  
+  
+  # Map cluster numbers (0:13) to their corresponding labels
+  names(cluster_labels) <- as.character(0:13)
+  
+  # Apply the labels to your Seurat object
+  names(cluster_labels) <- levels(Yng)
+  Yng <- RenameIdents(Yng, cluster_labels)
+  
+  Idents(Yng) <- "seurat_clusters"
+  Yng <- RenameIdents(Yng, setNames(cluster_labels, levels(Yng)))
+  Yng$celltype <- Idents(Yng)
+  table(Yng$seurat_clusters, Yng$celltype)
+  
+  ### CellChat for each group
+  data.input <- GetAssayData(Yng, layer = "data")
+  meta <- Yng@meta.data
+  cellchat.Yng <- createCellChat(object = data.input, meta = meta, group.by = "celltype")
+  cellchat.Yng@DB <- CellChatDB.mouse
+  ## check available pathways
+  unique(cellchat.Yng@DB$interaction$pathway_name)
+  #Subset expression data to signaling genes
+  cellchat.Yng <- subsetData(cellchat.Yng)
+  cellchat.Yng <- identifyOverExpressedGenes(cellchat.Yng)
+  cellchat.Yng <- identifyOverExpressedInteractions(cellchat.Yng)
+  cellchat.Yng <- computeCommunProb(cellchat.Yng)
+  cellchat.Yng <- filterCommunication(cellchat.Yng, min.cells = 10)
+  cellchat.Yng <- computeCommunProbPathway(cellchat.Yng)
+  cellchat.Yng <- aggregateNet(cellchat.Yng)
+  #See which pathways are active in this dataset
+  cellchat.Yng@netP$pathways
+  Yng_pathways <- cellchat.Yng@netP$pathways
+  Yng_pathways_df <- data.frame(Pathway = Yng_pathways)
+  write.csv(Yng_pathways_df, "cellchat_detected_Yng_pathways.csv", row.names = FALSE)
+  #Signaling strength across all pathways
+  netVisual_heatmap(cellchat.Yng)
+  #Start visualizing specific pathways
+  netVisual_aggregate(cellchat.Yng, signaling = "COMPLEMENT", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "MHC-I", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "MHC-II", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "IGF", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "CD45", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "PECAM1", layout = "chord")
+  #netVisual_aggregate(cellchat.Yng, signaling = "PD-L1", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "LAMININ", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "TGFb", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "CXCL", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "PDGF", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "EGF", layout = "chord")
+  #netVisual_aggregate(cellchat.Yng, signaling = "IL1", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "VEGF", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "CSF", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "APP", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "NOTCH", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "SPP1", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "ITGAL-ITGB2", layout = "chord")
+  #netVisual_aggregate(cellchat.Yng, signaling = "CD86", layout = "chord")
+  #netVisual_aggregate(cellchat.Yng, signaling = "FASLG", layout = "chord")
+  #netVisual_aggregate(cellchat.Yng, signaling = "LCK", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "GRN", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "VCAM", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "ICAM", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "MIF", layout = "chord")
+  netVisual_aggregate(cellchat.Yng, signaling = "CD22", layout = "chord")
+  
+  
+  Idents(YngvOldvAPP)<-"genotype"
+  Old <-subset(YngvOldvAPP, idents=c("Old"))
+  Idents(Old)<-"seurat_clusters"
+  
+  cluster_labels <- c(
+    "0_MG_A",           # Cluster 0
+    "1_MG_B",           # Cluster 1
+    "2_EC",             # Cluster 2
+    "3_OLG",            # Cluster 3
+    "4_ASC",            # Cluster 4
+    "5_CPC",            # Cluster 5
+    "6_NEUR",           # Cluster 6
+    "7_OPC",            # Cluster 7
+    "8_NPC",            # Cluster 8
+    "9_MAC",            # Cluster 9
+    "10_VSMC",          # Cluster 10
+    "11_TC",            # Cluster 11
+    "12_VLMC",	      # Cluster 12
+    "13_EPC"	      # Cluster 13
+  )
+  
+  
+  # Map cluster numbers (0:13) to their corresponding labels
+  names(cluster_labels) <- as.character(0:13)
+  
+  # Apply the labels to your Seurat object
+  names(cluster_labels) <- levels(Old)
+  Old <- RenameIdents(Old, cluster_labels)
+  
+  Idents(Old) <- "seurat_clusters"
+  Old <- RenameIdents(Old, setNames(cluster_labels, levels(Old)))
+  Old$celltype <- Idents(Old)
+  table(Old$seurat_clusters, Old$celltype)
+  
+  ### CellChat for each group
+  data.input <- GetAssayData(Old, layer = "data")
+  meta <- Old@meta.data
+  cellchat.Old <- createCellChat(object = data.input, meta = meta, group.by = "celltype")
+  cellchat.Old@DB <- CellChatDB.mouse
+  ## check available pathways
+  unique(cellchat.Old@DB$interaction$pathway_name)
+  #Subset expression data to signaling genes
+  cellchat.Old <- subsetData(cellchat.Old)
+  cellchat.Old <- identifyOverExpressedGenes(cellchat.Old)
+  cellchat.Old <- identifyOverExpressedInteractions(cellchat.Old)
+  cellchat.Old <- computeCommunProb(cellchat.Old)
+  cellchat.Old <- filterCommunication(cellchat.Old, min.cells = 10)
+  cellchat.Old <- computeCommunProbPathway(cellchat.Old)
+  cellchat.Old <- aggregateNet(cellchat.Old)
+  #See which pathways are active in this dataset
+  cellchat.Old@netP$pathways
+  Old_pathways <- cellchat.Old@netP$pathways
+  Old_pathways_df <- data.frame(Pathway = Old_pathways)
+  write.csv(Old_pathways_df, "cellchat_detected_Old_pathways.csv", row.names = FALSE)
+  #Signaling strength across all pathways
+  netVisual_heatmap(cellchat.Old)
+  #Start visualizing specific pathways
+  netVisual_aggregate(cellchat.Old, signaling = "COMPLEMENT", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "MHC-I", layout = "chord")
+  #netVisual_aggregate(cellchat.Old, signaling = "MHC-II", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "IGF", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "CD45", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "PECAM1", layout = "chord")
+  #netVisual_aggregate(cellchat.Old, signaling = "PD-L1", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "LAMININ", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "TGFb", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "CXCL", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "PDGF", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "EGF", layout = "chord")
+  #netVisual_aggregate(cellchat.Old, signaling = "IL1", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "VEGF", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "CSF", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "APP", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "NOTCH", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "SPP1", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "ITGAL-ITGB2", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "CD86", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "FASLG", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "LCK", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "GRN", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "VCAM", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "ICAM", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "MIF", layout = "chord")
+  netVisual_aggregate(cellchat.Old, signaling = "CD22", layout = "chord")
+  
+  
+  Idents(YngvOldvAPP)<-"genotype"
+  APP <-subset(YngvOldvAPP, idents=c("APP"))
+  Idents(APP)<-"seurat_clusters"
+  
+  cluster_labels <- c(
+    "0_MG_A",           # Cluster 0
+    "1_MG_B",           # Cluster 1
+    "2_EC",             # Cluster 2
+    "3_OLG",            # Cluster 3
+    "4_ASC",            # Cluster 4
+    "5_CPC",            # Cluster 5
+    "6_NEUR",           # Cluster 6
+    "7_OPC",            # Cluster 7
+    "8_NPC",            # Cluster 8
+    "9_MAC",            # Cluster 9
+    "10_VSMC",          # Cluster 10
+    "11_TC",            # Cluster 11
+    "12_VLMC",	      # Cluster 12
+    "13_EPC"	      # Cluster 13
+  )
+  
+  
+  # Map cluster numbers (0:13) to their corresponding labels
+  names(cluster_labels) <- as.character(0:13)
+  
+  # Apply the labels to your Seurat object
+  names(cluster_labels) <- levels(APP)
+  APP <- RenameIdents(APP, cluster_labels)
+  
+  Idents(APP) <- "seurat_clusters"
+  APP <- RenameIdents(APP, setNames(cluster_labels, levels(APP)))
+  APP$celltype <- Idents(APP)
+  table(APP$seurat_clusters, APP$celltype)
+  
+  ### CellChat for each group
+  data.input <- GetAssayData(APP, layer = "data")
+  meta <- APP@meta.data
+  cellchat.APP <- createCellChat(object = data.input, meta = meta, group.by = "celltype")
+  cellchat.APP@DB <- CellChatDB.mouse
+  ## check available pathways
+  unique(cellchat.APP@DB$interaction$pathway_name)
+  #Subset expression data to signaling genes
+  cellchat.APP <- subsetData(cellchat.APP)
+  cellchat.APP <- identifyOverExpressedGenes(cellchat.APP)
+  cellchat.APP <- identifyOverExpressedInteractions(cellchat.APP)
+  cellchat.APP <- computeCommunProb(cellchat.APP)
+  cellchat.APP <- filterCommunication(cellchat.APP, min.cells = 10)
+  cellchat.APP <- computeCommunProbPathway(cellchat.APP)
+  cellchat.APP <- aggregateNet(cellchat.APP)
+  #See which pathways are active in this dataset
+  cellchat.APP@netP$pathways
+  APP_pathways <- cellchat.APP@netP$pathways
+  APP_pathways_df <- data.frame(Pathway = APP_pathways)
+  write.csv(APP_pathways_df, "cellchat_detected_APP_pathways.csv", row.names = FALSE)
+  #Signaling strength across all pathways
+  netVisual_heatmap(cellchat.APP)
+  #Start visualizing specific pathways
+  netVisual_aggregate(cellchat.APP, signaling = "COMPLEMENT", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "MHC-I", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "MHC-II", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "IGF", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "CD45", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "PECAM1", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "PD-L1", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "LAMININ", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "TGFb", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "CXCL", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "PDGF", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "EGF", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "IL1", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "VEGF", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "CSF", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "APP", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "NOTCH", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "SPP1", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "ITGAL-ITGB2", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "CD86", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "FASLG", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "LCK", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "GRN", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "VCAM", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "ICAM", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "MIF", layout = "chord")
+  netVisual_aggregate(cellchat.APP, signaling = "CD22", layout = "chord")
+  
+  
+  
+  ### Checking pathway info to extract genes involved
+  # Define pathways of interest
+  pathways_to_check <- c("COMPLEMENT", "MHC-I", "MHC-II", "IGF", "CD45", "PECAM1", "PD-L1", "LAMININ", "TGFb", "CXCL", "PDGF", "EGF", "IL1", "VEGF", "CSF", "APP", "NOTCH", "SPP1", "ITGAL-ITGB2", "CD86", "FASLG", "LCK", "GRN", "VCAM", "ICAM", "MIF", "CD22")
+  # Extract CellChat interaction database
+  db <- cellchat.APP@DB$interaction
+  pathway_tables <- list()
+  
+  for (pw in pathways_to_check) {
+    
+    pw_table <- subset(db, pathway_name == pw)
+    
+    if (nrow(pw_table) == 0) {
+      message(paste("Pathway not found:", pw))
+      next
+    }
+    
+    pw_table$Pathway <- pw
+    pathway_tables[[pw]] <- pw_table
+  }
+  combined_pathway_info <- do.call(rbind, pathway_tables)
+  write.csv(
+    combined_pathway_info,
+    "CellChat_database_interactions_selected_pathways.csv",
+    row.names = FALSE
+  )
+  head(combined_pathway_info)
+  # Initialize empty list to store results
+  results_list <- list()
+  for (pw in pathways_to_check) {
+    # subset LR pairs for pathway
+    lr <- subset(db, pathway_name == pw)   
+    # skip pathways not found
+    if (nrow(lr) == 0) next  
+    # extract genes
+    genes <- unique(c(lr$ligand, lr$receptor))
+    # create presence table
+    df <- data.frame(Pathway = pw, Gene = genes, In_Yng = genes %in% rownames(Yng), In_Old = genes %in% rownames(Old), In_APP = genes %in% rownames(APP))
+    results_list[[pw]] <- df}
+  # Combine all pathways into one table
+  combined_results <- do.call(rbind, results_list)
+  # Export to CSV
+  write.csv(combined_results, "CellChat_pathway_gene_presence_Yng_Old_APP.csv",row.names = FALSE)
+  
+  ### DotPlots of active genes in pathway per group
+  pathways_to_plot <- c(
+    "COMPLEMENT", "MHC-I", "MHC-II", "IGF", "CD45", "PECAM1",
+    "PD-L1", "LAMININ", "TGFb", "CXCL", "PDGF", "EGF",
+    "IL1", "VEGF", "CSF", "APP", "NOTCH", "SPP1",
+    "ITGAL-ITGB2", "CD86", "FASLG", "LCK", "GRN",
+    "VCAM", "ICAM", "MIF", "CD22"
+  )
+  db <- cellchat.APP@DB$interaction
+  plot_dotplot_for_dataset <- function(seurat_obj, dataset_name, genes, pathway) {
+    
+    genes.present <- genes[genes %in% rownames(seurat_obj)]
+    
+    if (length(genes.present) == 0) {
+      message(paste("No genes present for", pathway, "in", dataset_name))
+      return(NULL)
+    }
+    
+    p <- DotPlot(
+      seurat_obj,
+      features = genes.present,
+      group.by = "celltype",
+      cols = c("blue", "red")
+    ) + RotatedAxis() +
+      ggtitle(paste(dataset_name, "-", pathway))
+    
+    ggsave(
+      filename = paste0("DotPlot_", dataset_name, "_", pathway, ".png"),
+      plot = p,
+      width = 12,
+      height = 6
+    )
+  }
+  for (pw in pathways_to_plot) {
+    
+    lr <- subset(db, pathway_name == pw)
+    
+    if (nrow(lr) == 0) {
+      message(paste("Pathway not found:", pw))
+      next
+    }
+    
+    genes <- unique(c(lr$ligand, lr$receptor))
+    
+    plot_dotplot_for_dataset(APP, "APP", genes, pw)
+    plot_dotplot_for_dataset(Old, "Old", genes, pw)
+    plot_dotplot_for_dataset(Yng, "Yng", genes, pw)
+  }
+  
+  
+  ### Begin CellChat FvM Analysis
+  Idents(YngvOldvAPP)<-"group"
+  WT_YF <-subset(YngvOldvAPP_filtered, idents=("WT_YF"))
+  WT_YM <-subset(YngvOldvAPP_filtered, idents=("WT_YM"))
+  WT_OF <-subset(YngvOldvAPP_filtered, idents=("WT_OF"))
+  WT_OM <-subset(YngvOldvAPP_filtered, idents=("WT_OM"))
+  APP_F <-subset(YngvOldvAPP_filtered, idents=("APP_F"))
+  APP_M <-subset(YngvOldvAPP_filtered, idents=("APP_M"))
+  
+  
+  
+  
+  cluster_labels <- c(
+    "0_MG_A",           # Cluster 0
+    "1_MG_B",           # Cluster 1
+    "2_EC",             # Cluster 2
+    "3_OLG",            # Cluster 3
+    "4_ASC",            # Cluster 4
+    "5_CPC",            # Cluster 5
+    "6_NEUR",           # Cluster 6
+    "7_OPC",            # Cluster 7
+    "8_NPC",            # Cluster 8
+    "9_MAC",            # Cluster 9
+    "10_VSMC",          # Cluster 10
+    "11_TC",            # Cluster 11
+    "12_VLMC",	      # Cluster 12
+    "13_EPC"	      # Cluster 13
+  )
+  
+  names(cluster_labels) <- as.character(0:13)
+  
+  
+  seurat_list <- list(
+    WT_YF = WT_YF,
+    WT_YM = WT_YM,
+    WT_OF = WT_OF,
+    WT_OM = WT_OM,
+    APP_F = APP_F,
+    APP_M = APP_M
+  )
+  
+  pathways_to_plot <- c(
+    "COMPLEMENT","MHC-I","MHC-II","IGF","CD45","PECAM1",
+    "PD-L1","LAMININ","TGFb","CXCL","PDGF","EGF","IL1",
+    "VEGF","CSF","APP","NOTCH","SPP1","ITGAL-ITGB2",
+    "CD86","FASLG","LCK","GRN","VCAM","ICAM","MIF","CD22","GALECTIN","GAS"
+  )
+  
+  run_cellchat_pipeline <- function(seurat_obj, dataset_name) {
+    
+    message("Processing: ", dataset_name)
+    
+    Idents(seurat_obj) <- "seurat_clusters"
+    seurat_obj <- RenameIdents(seurat_obj, setNames(cluster_labels, levels(seurat_obj)))
+    seurat_obj$celltype <- Idents(seurat_obj)
+    
+    data.input <- GetAssayData(seurat_obj, layer = "data")
+    meta <- seurat_obj@meta.data
+    
+    cellchat <- createCellChat(object = data.input, meta = meta, group.by = "celltype")
+    cellchat@DB <- CellChatDB.mouse
+    
+    cellchat <- subsetData(cellchat)
+    cellchat <- identifyOverExpressedGenes(cellchat)
+    cellchat <- identifyOverExpressedInteractions(cellchat)
+    cellchat <- computeCommunProb(cellchat)
+    cellchat <- filterCommunication(cellchat, min.cells = 10)
+    cellchat <- computeCommunProbPathway(cellchat)
+    cellchat <- aggregateNet(cellchat)
+    
+    # Export detected pathways
+    pathways <- cellchat@netP$pathways
+    write.csv(
+      data.frame(Pathway = pathways),
+      paste0("cellchat_detected_", dataset_name, "_pathways.csv"),
+      row.names = FALSE
+    )
+    
+    # Heatmap
+    pdf(paste0("CellChat_heatmap_", dataset_name, ".pdf"))
+    netVisual_heatmap(cellchat)
+    dev.off()
+    
+    
+    #For Figure 3F
+    # Chord plots for selected pathways
+    for (pw in pathways_to_plot) {
+      if (pw %in% pathways) {
+        pdf(paste0("Chord_", dataset_name, "_", pw, ".pdf"))
+        netVisual_aggregate(cellchat, signaling = pw, layout = "chord")
+        dev.off()
+      }
+    }
+    
+    return(cellchat)
+  }
+  
+  cellchat_results <- lapply(
+    names(seurat_list),
+    function(name) run_cellchat_pipeline(seurat_list[[name]], name)
+  )
+  
+  names(cellchat_results) <- names(seurat_list)
+  
+  
+  
+  
+  ## Generate dotplots of active genes
+  cluster_labels <- c(
+    "0_MG_A",           # Cluster 0
+    "1_MG_B",           # Cluster 1
+    "2_EC",             # Cluster 2
+    "3_OLG",            # Cluster 3
+    "4_ASC",            # Cluster 4
+    "5_CPC",            # Cluster 5
+    "6_NEUR",           # Cluster 6
+    "7_OPC",            # Cluster 7
+    "8_NPC",            # Cluster 8
+    "9_MAC",            # Cluster 9
+    "10_VSMC",          # Cluster 10
+    "11_TC",            # Cluster 11
+    "12_VLMC",	      # Cluster 12
+    "13_EPC"	      # Cluster 13
+  )
+  
+  names(cluster_labels) <- as.character(0:13)
+  
+  seurat_list <- list(
+    WT_YF = WT_YF,
+    WT_YM = WT_YM,
+    WT_OF = WT_OF,
+    WT_OM = WT_OM,
+    APP_F = APP_F,
+    APP_M = APP_M
+  )
+  
+  for (nm in names(seurat_list)) {
+    
+    obj <- seurat_list[[nm]]
+    
+    # Set identities to clusters
+    Idents(obj) <- "seurat_clusters"
+    
+    # Rename clusters to biological labels
+    obj <- RenameIdents(
+      obj,
+      setNames(cluster_labels, levels(obj))
+    )
+    
+    # Store celltype as metadata
+    obj$celltype <- Idents(obj)
+    
+    # Print sanity check table
+    message("\nCelltype mapping for ", nm)
+    print(table(obj$seurat_clusters, obj$celltype))
+    
+    # Save object back into list
+    seurat_list[[nm]] <- obj
+  }
+  
+  
+  WT_YF <- seurat_list$WT_YF
+  WT_YM <- seurat_list$WT_YM
+  WT_OF <- seurat_list$WT_OF
+  WT_OM <- seurat_list$WT_OM
+  APP_F <- seurat_list$APP_F
+  APP_M <- seurat_list$APP_M
+  
+  colnames(WT_YF@meta.data)
+  
+  
+  pathways_to_plot <- c(
+    "COMPLEMENT", "MHC-I", "MHC-II", "IGF", "CD45", "PECAM1",
+    "PD-L1", "LAMININ", "TGFb", "CXCL", "PDGF", "EGF",
+    "IL1", "VEGF", "CSF", "APP", "NOTCH", "SPP1",
+    "ITGAL-ITGB2", "CD86", "FASLG", "LCK", "GRN",
+    "VCAM", "ICAM", "MIF", "CD22"
+  )
+  
+  
+  db <- CellChatDB.mouse$interaction
+  
+  seurat_list <- list(
+    WT_YF = WT_YF,
+    WT_YM = WT_YM,
+    WT_OF = WT_OF,
+    WT_OM = WT_OM,
+    APP_F = APP_F,
+    APP_M = APP_M
+  )
+  
+  
+  plot_dotplot_for_dataset <- function(seurat_obj, dataset_name, genes, pathway) {
+    
+    genes.present <- genes[genes %in% rownames(seurat_obj)]
+    
+    if (length(genes.present) == 0) {
+      message(paste("No genes present for", pathway, "in", dataset_name))
+      return(NULL)
+    }
+    
+    p <- DotPlot(
+      seurat_obj,
+      features = genes.present,
+      group.by = "celltype",
+      cols = c("blue", "red"),
+      dot.scale = 8   # controls max dot size
+    ) +
+      RotatedAxis() +
+      ggtitle(paste(dataset_name, "-", pathway)) +
+      
+      # STANDARDIZE % EXPRESSION (dot size)
+      scale_size(
+        range = c(0, 8),                     # visual size range
+        breaks = c(0, 25, 50, 75, 100),     # legend values
+        limits = c(0, 100)
+      ) +
+      
+      # STANDARDIZE EXPRESSION SCALE
+      scale_color_gradientn(
+        colours = c("blue", "white", "red"),
+        limits = c(-2, 2),                  # FIXED SCALE
+        breaks = c(-2, -1, 0, 1, 2),
+        oob = scales::squish                # squish values outside range
+      ) +
+      
+      labs(
+        size = "% Expressed",
+        color = "Scaled Expression"
+      )
+    
+    ggsave(
+      filename = paste0("DotPlot_", dataset_name, "_", pathway, ".png"),
+      plot = p,
+      width = 12,
+      height = 6
+    )
+  }
+  
+  for (pw in pathways_to_plot) {
+    
+    lr <- subset(db, pathway_name == pw)
+    
+    if (nrow(lr) == 0) {
+      message(paste("Pathway not found:", pw))
+      next
+    }
+    
+    genes <- unique(c(lr$ligand, lr$receptor))
+    
+    for (dataset_name in names(seurat_list)) {
+      
+      plot_dotplot_for_dataset(
+        seurat_list[[dataset_name]],
+        dataset_name,
+        genes,
+        pw
+      )
+    }
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  # Generate representative plot for subclustering
+  
+  # Number of identity levels
+  n <- length(levels(Idents(YngvOldvAPP)))
+  # Extract palette colors
+  ggplot_build(p)$plot$scales$scales[[1]]$palette(n)
+  
+  # Get cluster levels
+  cluster_levels <- levels(Idents(YngvOldvAPP)) 
+  # Make everything gray
+  cluster_colors <- rep("grey80", length(cluster_levels))
+  names(cluster_colors) <- cluster_levels
+  # Set clusters 0 and 1 to distinct colors
+  cluster_colors["0"] <- "#F8766D"
+  cluster_colors["1"] <- "#E38900"
+  cluster_colors["9"] <- "#00B6EB"
+  cluster_colors["12"] <- "#FB61D7"
+  DimPlot(YngvOldvAPP, cols = cluster_colors)
+  
+  
+  clustercountpergroup_table <- table(
+    YngvOldvAPP$seurat_clusters,
+    YngvOldvAPP$group
+  )
+  
+  clustercountpergroup_table_df <- as.data.frame.matrix(clustercountpergroup_table)
+  
+  write.csv(clustercountpergroup_table_df, file = "YngvOldvAPP_clustercountpergroup_table_df.csv", row.names = TRUE)
+  
+  cell_counts_bysample <- table(YngvOldvAPP$orig.ident, YngvOldvAPP$seurat_clusters)
+  
+  write.csv(as.data.frame.matrix(cell_counts_bysample), file = "cell_counts_bysample.csv")
+  
+  
+  
+  ### Generate radar plots for App gene expression ###
+  
+  ### Radar plot v2 that has all 6 groups displayed ###
+  #This section generates Figure 1H
+  
+  
+  library(Seurat)
+  library(dplyr)
+  library(tidyr)
+  library(tibble)
+  library(fmsb)
+  library(scales)
+  
+  # ============================================================
+  # 1. Generate the reference DotPlot
+  # ============================================================
+  
+  p_app <- DotPlot(
+    YngvOldvAPP_filtered,
+    features = "App",
+    cols = c("blue", "red")
+  )
+  
+  dotplot_data <- p_app$data
+  
+  dotplot_data
+  
+  
+  
+  
+  
+  # ============================================================
+  # 2. Get the exact center and SD used for the 14-cluster
+  # DotPlot scaling
+  #
+  # Seurat scales log1p(avg.exp), NOT avg.exp itself
+  # ============================================================
+  
+  dotplot_log_avg <- log1p(dotplot_data$avg.exp)
+  
+  App_center <- mean(dotplot_log_avg)
+  App_sd <- sd(dotplot_log_avg)
+  
+  App_center
+  App_sd
+  
+  
+  
+  
+  
+  # ============================================================
+  # 3. Extract App values for every cell
+  # ============================================================
+  
+  app_data <- FetchData(
+    YngvOldvAPP_filtered,
+    vars = c(
+      "App",
+      "seurat_clusters",
+      "group"
+    )
+  )
+  
+  
+  
+  
+  
+  # ============================================================
+  # 4. Calculate DotPlot-style avg.exp for each
+  # cluster x group
+  #
+  # IMPORTANT:
+  # DotPlot avg.exp = mean(expm1(App))
+  # ============================================================
+  
+  app_group_means <- app_data %>%
+    group_by(
+      seurat_clusters,
+      group
+    ) %>%
+    summarise(
+      avg.exp = mean(
+        expm1(App),
+        na.rm = TRUE
+      ),
+      
+      pct.exp = mean(App > 0, na.rm = TRUE) * 100,
+      
+      .groups = "drop"
+    )
+  
+  
+  
+  
+  
+  # ============================================================
+  # 5. Calculate scaled expression using the SAME reference
+  # as your original 14-cluster DotPlot
+  # ============================================================
+  
+  app_group_means <- app_group_means %>%
+    mutate(
+      
+      log_avg.exp = log1p(avg.exp),
+      
+      avg.exp.scaled =
+        (log_avg.exp - App_center) /
+        App_sd
+    )
+  
+  
+  
+  
+  
+  # View values
+  app_group_means
+  
+  
+  
+  
+  
+  # ============================================================
+  # 6. Export values
+  # ============================================================
+  
+  write.csv(
+    app_group_means,
+    "App_group_cluster_DotPlot_scaled_values.csv",
+    row.names = FALSE
+  )
+  
+  
+  
+  
+  
+  # ============================================================
+  # 7. Prepare radar plot
+  # ============================================================
+  
+  radar_data <- app_group_means %>%
+    select(
+      seurat_clusters,
+      group,
+      avg.exp.scaled
+    ) %>%
+    pivot_wider(
+      names_from = group,
+      values_from = avg.exp.scaled
+    )
+  
+  
+  
+  
+  
+  # Make sure clusters are correctly ordered
+  cluster_order <- c(
+    "0_MG_A",
+    "1_MG_B",
+    "2_EC",
+    "3_OLG",
+    "4_ASC",
+    "5_CPC",
+    "6_NEUR",
+    "7_OPC",
+    "8_NPC",
+    "9_MAC",
+    "10_VSMC",
+    "11_TC",
+    "12_VLMC",
+    "13_EPC"
+  )
+  
+  radar_data <- radar_data %>%
+    mutate(
+      seurat_clusters = factor(
+        seurat_clusters,
+        levels = cluster_order
+      )
+    ) %>%
+    arrange(seurat_clusters)
+  
+  
+  
+  
+  
+  # ============================================================
+  # 8. Convert to radar format
+  # ============================================================
+  
+  radar_plot_data <- radar_data %>%
+    select(
+      seurat_clusters,
+      WT_YF,
+      WT_YM,
+      WT_OF,
+      WT_OM,
+      APP_F,
+      APP_M
+    ) %>%
+    column_to_rownames("seurat_clusters") %>%
+    t() %>%
+    as.data.frame()
+  
+  
+  
+  
+  
+  # ============================================================
+  # 9. Set symmetric axis
+  # ============================================================
+  
+  limit <- ceiling(
+    max(abs(radar_plot_data), na.rm = TRUE)
+  )
+  
+  max_val <- limit
+  min_val <- -limit
+  
+  radar_plot_data <- rbind(
+    Max = rep(max_val, ncol(radar_plot_data)),
+    Min = rep(min_val, ncol(radar_plot_data)),
+    radar_plot_data
+  )
+  
+  
+  
+  
+  
+  # ============================================================
+  # 10. Colors
+  # ============================================================
+  
+  group_colors <- c(
+    WT_YF = "#E7D4E8",
+    WT_YM = "#D9F0D3",
+    WT_OF = "#AF8DC3",
+    WT_OM = "#7FBF7B",
+    APP_F = "#762A83",
+    APP_M = "#1B7837"
+  )
+  
+  
+  
+  
+  
+  # ============================================================
+  # 11. Radar plot
+  # ============================================================
+  
+  radarchart(
+    radar_plot_data,
+    
+    axistype = 1,
+    
+    pcol = group_colors,
+    
+    pfcol = scales::alpha(
+      group_colors,
+      0.10
+    ),
+    
+    plwd = 2.5,
+    plty = 1,
+    
+    cglcol = "grey75",
+    cglty = 1,
+    cglwd = 0.8,
+    
+    axislabcol = "grey30",
+    
+    caxislabels = round(
+      seq(
+        min_val,
+        max_val,
+        length.out = 5
+      ),
+      2
+    ),
+    
+    vlcex = 0.8,
+    
+    title = "App Expression Across Cell Types"
+  )
+  
+  
+  
+  
+  
+  legend(
+    "topright",
+    legend = names(group_colors),
+    col = group_colors,
+    lwd = 3,
+    bty = "n",
+    cex = 0.8
+  )
+  
+  
+  cluster_labels <- c(
+    "0_MG_A",
+    "1_MG_B",
+    "2_EC",
+    "3_OLG",
+    "4_ASC",
+    "5_CPC",
+    "6_NEUR",
+    "7_OPC",
+    "8_NPC",
+    "9_MAC",
+    "10_VSMC",
+    "11_TC",
+    "12_VLMC",
+    "13_EPC"
+  )
+  
+  # Make sure the mapping is named by the original cluster numbers
+  names(cluster_labels) <- as.character(0:13)
+  
+  # Convert the existing seurat_clusters to character
+  old_clusters <- as.character(
+    YngvOldvAPP_filtered$seurat_clusters
+  )
+  
+  # Replace cluster numbers with labels
+  new_clusters <- cluster_labels[old_clusters]
+  
+  # Put the new labels back into the metadata
+  YngvOldvAPP_filtered@meta.data$seurat_clusters <- new_clusters
+  DimPlot(YngvOldvAPP_filtered, label=TRUE)
+  Idents(YngvOldvAPP_filtered)<-"seurat_clusters"
+  DimPlot(YngvOldvAPP_filtered, label=TRUE)
+  
+  saveRDS(YngvOldvAPP_filtered, "YngvOldvAPP_filtered_final.rds")
+  
+  cluster_labels <- c(
+    "0_MG_A",
+    "1_MG_B",
+    "2_EC",
+    "3_OLG",
+    "4_ASC",
+    "5_CPC",
+    "6_NEUR",
+    "7_OPC",
+    "8_NPC",
+    "9_MAC",
+    "10_VSMC",
+    "11_TC",
+    "12_VLMC",
+    "13_EPC")
+  
+  # Make sure the mapping is named by the original cluster numbers
+  names(cluster_labels) <- as.character(0:13)
+  
+  # Convert the existing seurat_clusters to character
+  old_clusters <- as.character(YngvOldvAPP$seurat_clusters)
+  
+  # Replace cluster numbers with labels
+  new_clusters <- cluster_labels[old_clusters]
+  
+  # Put the new labels back into the metadata
+  YngvOldvAPP@meta.data$seurat_clusters <- new_clusters
+  DimPlot(YngvOldvAPP, label=TRUE)
+  Idents(YngvOldvAPP)<-"seurat_clusters"
+  DimPlot(YngvOldvAPP, label=TRUE)
+  
+  saveRDS(YngvOldvAPP, "YngvOldvAPP_final.rds")
+  
+  
+  microglia_cluster_labels <- c(
+    "0_Hom_A",          # Cluster 0
+    "1_Hom_B",          # Cluster 1
+    "2_S1_DAM",         # Cluster 2
+    "3_S2_DAM",         # Cluster 3
+    "4_IRM",            # Cluster 4
+    "5_Old_DAM",        # Cluster 5
+    "6_Snap25",         # Cluster 6
+    "7_Slc2a1",         # Cluster 7
+    "8_Alas"            # Cluster 8
+  )
+  
+  # Map cluster numbers (0:8) to their corresponding labels
+  names(microglia_cluster_labels) <- as.character(0:8)
+  
+  # Convert the existing seurat_clusters to character
+  old_microglia_clusters <- as.character(YngvOldvAPP_microgliav2_filtered$seurat_clusters)
+  
+  # Replace cluster numbers with labels
+  new_microglia_clusters <- microglia_cluster_labels[old_microglia_clusters]
+  
+  # Put the new labels back into the metadata
+  YngvOldvAPP_microgliav2_filtered@meta.data$seurat_clusters <- new_microglia_clusters
+  DimPlot(YngvOldvAPP_microgliav2_filtered, label=TRUE)
+  Idents(YngvOldvAPP_microgliav2_filtered)<-"seurat_clusters"
+  DimPlot(YngvOldvAPP_microgliav2_filtered, label=TRUE)
+  
+  saveRDS(YngvOldvAPP_microgliav2_filtered, "YngvOldvAPP_microgliav2_filtered_final.rds")
+  
+  
+  
+  
+  
+  #### Cell Chat Microglia analysis ####
+  
+  
+  ### Begin CellChat FvM Analysis
+  Idents(YngvOldvAPP_microgliav2_filtered)<-"group"
+  APP_F <-subset(YngvOldvAPP_microgliav2_filtered, idents=("APP_F"))
+  APP_M <-subset(YngvOldvAPP_microgliav2_filtered, idents=("APP_M"))
+  
+  
+  # Define the new cluster identities (in order of cluster numbers 0 to 8)
+  microglia_cluster_labels <- c(
+    "0_Hom_A",          # Cluster 0
+    "1_Hom_B",          # Cluster 1
+    "2_S1_DAM",         # Cluster 2
+    "3_S2_DAM",         # Cluster 3
+    "4_IRM",            # Cluster 4
+    "5_Old_DAM",        # Cluster 5
+    "6_Snap25",         # Cluster 6
+    "7_Slc2a1",         # Cluster 7
+    "8_Alas"            # Cluster 8
+  )
+  
+  names(microglia_cluster_labels) <- as.character(0:8)
+  
+  
+  seurat_list <- list(
+    APP_F = APP_F,
+    APP_M = APP_M
+  )
+  
+  pathways_to_plot <- c(
+    "IGF","VEGF","CSF","APP","SPP1"
+  )
+  
+  run_cellchat_pipeline <- function(seurat_obj, dataset_name) {
+    
+    message("Processing: ", dataset_name)
+    
+    Idents(seurat_obj) <- "seurat_clusters"
+    seurat_obj <- RenameIdents(seurat_obj, setNames(microglia_cluster_labels, levels(seurat_obj)))
+    seurat_obj$celltype <- Idents(seurat_obj)
+    
+    data.input <- GetAssayData(seurat_obj, layer = "data")
+    meta <- seurat_obj@meta.data
+    
+    cellchat <- createCellChat(object = data.input, meta = meta, group.by = "celltype")
+    cellchat@DB <- CellChatDB.mouse
+    
+    cellchat <- subsetData(cellchat)
+    cellchat <- identifyOverExpressedGenes(cellchat)
+    cellchat <- identifyOverExpressedInteractions(cellchat)
+    cellchat <- computeCommunProb(cellchat)
+    cellchat <- filterCommunication(cellchat, min.cells = 10)
+    cellchat <- computeCommunProbPathway(cellchat)
+    cellchat <- aggregateNet(cellchat)
+    
+    # Export detected pathways
+    pathways <- cellchat@netP$pathways
+    write.csv(
+      data.frame(Pathway = pathways),
+      paste0("cellchat_detected_", dataset_name, "_pathways.csv"),
+      row.names = FALSE
+    )
+    
+    # Heatmap
+    pdf(paste0("CellChat_heatmap_", dataset_name, ".pdf"))
+    netVisual_heatmap(cellchat)
+    dev.off()
+    
+    # Chord plots for selected pathways
+    for (pw in pathways_to_plot) {
+      if (pw %in% pathways) {
+        pdf(paste0("Chord_", dataset_name, "_", pw, ".pdf"))
+        netVisual_aggregate(cellchat, signaling = pw, layout = "chord")
+        dev.off()
+      }
+    }
+    
+    return(cellchat)
+  }
+  
+  cellchat_results <- lapply(
+    names(seurat_list),
+    function(name) run_cellchat_pipeline(seurat_list[[name]], name)
+  )
+  
+  names(cellchat_results) <- names(seurat_list)
+  
+  
+  
+  
+  ## Generate dotplots of active genes
+  microglia_cluster_labels <- c(
+    "0_Hom_A",          # Cluster 0
+    "1_Hom_B",          # Cluster 1
+    "2_S1_DAM",         # Cluster 2
+    "3_S2_DAM",         # Cluster 3
+    "4_IRM",            # Cluster 4
+    "5_Old_DAM",        # Cluster 5
+    "6_Snap25",         # Cluster 6
+    "7_Slc2a1",         # Cluster 7
+    "8_Alas"            # Cluster 8
+  )
+  
+  names(microglia_cluster_labels) <- as.character(0:8)
+  
+  seurat_list <- list(
+    APP_F = APP_F,
+    APP_M = APP_M
+  )
+  
+  for (nm in names(seurat_list)) {
+    
+    obj <- seurat_list[[nm]]
+    
+    # Set identities to clusters
+    Idents(obj) <- "seurat_clusters"
+    
+    # Rename clusters to biological labels
+    obj <- RenameIdents(
+      obj,
+      setNames(microglia_cluster_labels, levels(obj))
+    )
+    
+    # Store celltype as metadata
+    obj$celltype <- Idents(obj)
+    
+    # Print sanity check table
+    message("\nCelltype mapping for ", nm)
+    print(table(obj$seurat_clusters, obj$celltype))
+    
+    # Save object back into list
+    seurat_list[[nm]] <- obj
+  }
+  
+  
+  APP_F <- seurat_list$APP_F
+  APP_M <- seurat_list$APP_M
+  
+  colnames(APP_F@meta.data)
+  
+  
+  pathways_to_plot <- c(
+    "IGF","VEGF","CSF","APP","SPP1"
+  )
+  
+  
+  db <- CellChatDB.mouse$interaction
+  
+  seurat_list <- list(
+    APP_F = APP_F,
+    APP_M = APP_M
+  )
+  
+  
+  plot_dotplot_for_dataset <- function(seurat_obj, dataset_name, genes, pathway) {
+    
+    genes.present <- genes[genes %in% rownames(seurat_obj)]
+    
+    if (length(genes.present) == 0) {
+      message(paste("No genes present for", pathway, "in", dataset_name))
+      return(NULL)
+    }
+    
+    p <- DotPlot(
+      seurat_obj,
+      features = genes.present,
+      group.by = "celltype",
+      cols = c("blue", "red"),
+      dot.scale = 8   # controls max dot size
+    ) +
+      RotatedAxis() +
+      ggtitle(paste(dataset_name, "-", pathway)) +
+      
+      # STANDARDIZE % EXPRESSION (dot size)
+      scale_size(
+        range = c(0, 8),                     # visual size range
+        breaks = c(0, 25, 50, 75, 100),     # legend values
+        limits = c(0, 100)
+      ) +
+      
+      # STANDARDIZE EXPRESSION SCALE
+      scale_color_gradientn(
+        colours = c("blue", "white", "red"),
+        limits = c(-2, 2),                  # FIXED SCALE
+        breaks = c(-2, -1, 0, 1, 2),
+        oob = scales::squish                # squish values outside range
+      ) +
+      
+      labs(
+        size = "% Expressed",
+        color = "Scaled Expression"
+      )
+    
+    ggsave(
+      filename = paste0("DotPlot_", dataset_name, "_", pathway, ".png"),
+      plot = p,
+      width = 12,
+      height = 6
+    )
+  }
+  
+  for (pw in pathways_to_plot) {
+    
+    lr <- subset(db, pathway_name == pw)
+    
+    if (nrow(lr) == 0) {
+      message(paste("Pathway not found:", pw))
+      next
+    }
+    
+    genes <- unique(c(lr$ligand, lr$receptor))
+    
+    for (dataset_name in names(seurat_list)) {
+      
+      plot_dotplot_for_dataset(
+        seurat_list[[dataset_name]],
+        dataset_name,
+        genes,
+        pw
+      )
+    }
+  }
+  
+  
+  Idents(YngvOldvAPP_microgliav2)<-"group"
+  
+  APP_F <-subset(YngvOldvAPP_microgliav2, idents=("APP_F"))
+  
+  ### CellChat for each group
+  cellchat.APP_F <- createCellChat(APP_F)
+  CellChatDB <- CellChatDB.mouse
+  dplyr::glimpse(CellChatDB$interaction)
+  CellChatDB.use <- subsetDB(CellChatDB, search = "Secreted Signaling")
+  cellchat.APP_F@DB <- CellChatDB.use
+  cellchat.APP_F <- subsetData(cellchat.APP_F)
+  #future::plan("multiprocess", workers = 4)
+  cellchat.APP_F <- identifyOverExpressedGenes(cellchat.APP_F, do.fast = FALSE)
+  cellchat.APP_F <- identifyOverExpressedInteractions(cellchat.APP_F)
+  cellchat.APP_F <- computeCommunProb(cellchat.APP_F)
+  cellchat.APP_F <- filterCommunication(cellchat.APP_F, min.cells = 10)
+  cellchat.APP_F <- computeCommunProbPathway(cellchat.APP_F)
+  cellchat.APP_F <- aggregateNet(cellchat.APP_F)
+  groupSize <- as.numeric(table(cellchat.APP_F@idents))
+  par(mfrow = c(1,2), xpd=TRUE)
+  netVisual_circle(cellchat.APP_F@net$count, vertex.weight = groupSize, weight.scale = T, label.edge= F, title.name = "Number of interactions - APP_F")
+  netVisual_circle(cellchat.APP_F@net$weight, vertex.weight = groupSize, weight.scale = T, label.edge= F, title.name = "Interaction weights/strength - APP_F")
+  
+  ### Assign cluster names
+  # Define the new cluster identities (in order of cluster numbers 0 to 8)
+  microglia_cluster_labels <- c(
+    "0_Hom_A",          # Cluster 0
+    "1_Hom_B",          # Cluster 1
+    "2_S1_DAM",         # Cluster 2
+    "3_S2_DAM",         # Cluster 3
+    "4_IRM",            # Cluster 4
+    "5_Old_DAM",        # Cluster 5
+    "6_Snap25",         # Cluster 6
+    "7_Slc2a1",         # Cluster 7
+    "8_Alas"            # Cluster 8
+  )
+  
+  # Map cluster numbers (0:8) to their corresponding labels
+  names(microglia_cluster_labels) <- as.character(0:8)
+  
+  # Apply the labels to your Seurat object
+  names(microglia_cluster_labels) <- levels(YngvOldvAPP_microgliav2)
+  YngvOldvAPP_microgliav2 <- RenameIdents(YngvOldvAPP_microgliav2, microglia_cluster_labels)
+  
+  # Create new metadata column called "age_group"
+  
+  YngvOldvAPP_microgliav2$age_group <- ifelse(
+    YngvOldvAPP_microgliav2$orig.ident %in% c("YF_1", "YF_2"),
+    "7mo_WTF",
+    ifelse(
+      YngvOldvAPP_microgliav2$orig.ident %in% c("WT1_F"),
+      "13mo_WTF",
+      ifelse(
+        YngvOldvAPP_microgliav2$orig.ident %in% c("YM_1", "YM_2"),
+        "7mo_WTM",
+        ifelse(
+          YngvOldvAPP_microgliav2$orig.ident %in% c("WT1_M", "WT2_M"),
+          "13mo_WTM",
+          ifelse(
+            YngvOldvAPP_microgliav2$orig.ident %in% c("OF_1", "OF_2", "OF_3", "OF_4"),
+            "25mo_WTF",
+            ifelse(
+              YngvOldvAPP_microgliav2$orig.ident %in% c("OF_5", "OF_6"),
+              "29mo_WTF",
+              ifelse(
+                YngvOldvAPP_microgliav2$orig.ident %in% c("OM_1", "OM_2", "OM_3", "OM_4"),
+                "25mo_WTM",
+                ifelse(
+                  YngvOldvAPP_microgliav2$orig.ident %in% c("OM_5", "OM_6"),
+                  "29mo_WTM",
+                  ifelse(
+                    YngvOldvAPP_microgliav2$orig.ident %in% c(
+                      "Hom1_F", "Hom2_F", "Hom3_F",
+                      "Hom4_F", "Hom5_F", "Hom6_F"
+                    ),
+                    "13mo_APPF",
+                    ifelse(
+                      YngvOldvAPP_microgliav2$orig.ident %in% c(
+                        "Hom2_M", "Hom3_M", "Hom4_M",
+                        "Hom5_M", "Hom6_M"
+                      ),
+                      "13mo_APPM",
+                      NA
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+  
+  table(YngvOldvAPP_microgliav2$age_group, useNA = "ifany")DimPlot(YngvOldvAPP_microgliav2, label = TRUE)
+  
+  YngvOldvAPP_microgliav2$age_group <- factor(
+    YngvOldvAPP_microgliav2$age_group,
+    levels = c(
+      "7mo_WTF", "13mo_WTF",
+      "7mo_WTM", "13mo_WTM",
+      "25mo_WTF", "29mo_WTF",
+      "25mo_WTM", "29mo_WTM",
+      "13mo_APPF", "13mo_APPM"
+    )
+  )
+  
+  Idents(YngvOldvAPP_microgliav2) <- "age_group"
+  
+  saveRDS(YngvOldvAPP_microgliav2, "YngvOldvAPP_microgliav2.rds")
+  
+  
+  YngvOldvAPP_microgliav2_DEGs_7v13mo_F <- FindMarkers(YngvOldvAPP_microgliav2, ident.1 = "7mo_WTF", ident.2 = "13mo_WTF", logfc.threshold = 0.25, min.pct = 0.1)
+  YngvOldvAPP_microgliav2_DEGs_7v13mo_M <- FindMarkers(YngvOldvAPP_microgliav2, ident.1 = "7mo_WTM", ident.2 = "13mo_WTM", logfc.threshold = 0.25, min.pct = 0.1)
+  
+  write.csv(YngvOldvAPP_microgliav2_DEGs_7v13mo_F, "YngvOldvAPP_microgliav2_DEGs_7v13mo_F.csv")
+  write.csv(YngvOldvAPP_microgliav2_DEGs_7v13mo_M, "YngvOldvAPP_microgliav2_DEGs_7v13mo_M.csv")
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  

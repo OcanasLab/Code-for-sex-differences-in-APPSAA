@@ -1,0 +1,62 @@
+
+BiocManager::install("Augur")
+library(Augur)
+library(Seurat)
+library(viridis)
+library(ggplot2)
+
+#Set where you want to pull and export files
+setwd("")
+
+#Your Seurat Object 
+Seurat_Augur <- readRDS("YngvOldvAPP_filtered_final.rds")
+
+#A metadata file, this is an easy way to add cell_type or condition information
+#You can get you current seurat metadata from "write.csv(Seurat_Augur@meta.data, "metadata.csv")
+#From there you can easily add any meta data or rename columns
+#If you already have the information you need in your metadata you can skip this step
+meta_sd <- read.csv("metadata.csv")
+
+#Here I added some metadata to the seurat that included the cell_type information and the genotype
+Seurat_Augur <- AddMetaData(Seurat_Augur, meta_sd$genotype, col.name = "genotype")
+Seurat_Augur <- AddMetaData(Seurat_Augur, meta_sd$cell_type, col.name = "cell_type")
+
+
+
+
+
+
+#Here I set the idents to the metadata I want to subset on
+Idents(object=Seurat_Augur) <- "group"
+
+
+#Here I subset the identies I want to put into the Augur
+#Change these and then the conditions and controls later to get results for different sets
+Seurat_Augur_Subset <- subset(Seurat_Augur, idents = c("APP_F", "APP_M", "WT_YF", "WT_YM"))
+
+#I'm setting the expr variable as the counts from our subsetted seurat
+expr <- LayerData(object = Seurat_Augur_Subset,
+                  assay = "RNA",
+                  layer = "counts")
+
+
+
+#This is where you set what is counted as the treatment and what is the control
+Seurat_Augur_Subset$condition1 <- "NA"
+for (k in 1:length(Seurat_Augur_Subset$genotype)){
+  ifelse(Seurat_Augur_Subset$genotype[[k]] == "APP",
+         Seurat_Augur_Subset$condition1[[k]]<-"Treatment", 
+         Seurat_Augur_Subset$condition1[[k]] <- "Control")}
+
+#Runs the actual Augur code
+augur_data = calculate_auc(expr, Seurat_Augur_Subset@meta.data, label_col = "condition1",
+                                      rf_params = list(trees=500, mtry = 2,
+                                                       min_n = NULL, 
+                                                       importance = "accuracy"))
+
+
+
+#This writes the numerical Cell Type Prioritization numbers to an excel
+write.csv(augur_sexdiff_withCon$AUC, "APPvYng_Augur_AUC.csv")
+
+

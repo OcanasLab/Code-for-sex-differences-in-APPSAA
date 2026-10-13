@@ -1,0 +1,546 @@
+library(Seurat)  # Single-cell RNA-seq data analysis
+library(hdf5r)  # Reading and writing HDF5 files (for 10x Genomics data)
+library(SeuratDisk)  # Converting and handling Seurat objects efficiently
+library(ggplot2)  # Visualization and plotting
+
+
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
+remotes::install_github("mianaz/seuratdisk-V5")
+
+setwd()
+
+All_hu_data <- LoadH5Seurat("microglia.h5Seurat")
+
+
+
+if (!requireNamespace("remotes", quietly = TRUE)) {
+  install.packages("remotes")
+}
+remotes::install_github("mianaz/srtdisk")
+
+
+
+
+saveRDS(All_hu_data,"microglia.rds")
+
+
+All_hu_data <- readRDS("microglia.rds")
+
+
+
+
+metadatas <- read.csv("cell-annotation.full-atlas.csv")
+
+metadatas1 <- subset(metadatas, metadatas$grouping.by == "Microglia")
+
+metadatas <- read.csv(ROSMAP_clinical.csv")
+
+
+metadatas_set <- left_join(metadatas1, metadatas, by = c("individualID"= "individualID"))
+
+All_hu_data <- AddMetaData(object = All_hu_data, metadata = metadatas_set$sex, col.name = "sex")
+
+All_hu_data <- AddMetaData(object = All_hu_data, metadata = metadatas_set$braaksc, col.name = "braaksc")
+All_hu_data <- AddMetaData(object = All_hu_data, metadata = metadatas_set$ceradsc, col.name = "ceradsc")
+All_hu_data <- AddMetaData(object = All_hu_data, metadata = metadatas_set$cogdx, col.name = "cogdx")
+All_hu_data <- AddMetaData(object = All_hu_data, metadata = metadatas_set$dcfdx_lv, col.name = "dcfdx_lv")
+All_hu_data <- AddMetaData(object = All_hu_data, metadata = metadatas_set$apoe_genotype, col.name = "apoe_genotype")
+
+write.csv(metadatas_set, "Combo_Metadata.csv")
+saveRDS(All_hu_data, "Combo_metameta_Seurat.rds")
+
+
+#Went out of R and merged sex and braaksc in excel
+metadatas_set <- read.csv("Combo_Metadata.csv")
+
+hu_data <- AddMetaData(object = hu_data, metadata = metadatas_set$braac_sex, col.name = "braac_sex")
+
+
+Idents(hu_data) <- "braac_sex"
+
+
+#making sure to exclude any NA idents from the final object
+hu_data <- subset(hu_data, idents = c("34_male","56_male", "12_male", "0_male",
+                                      "34_female","56_female", "12_female","0_female"))
+
+
+saveRDS(hu_data, "Urghhhh_CorrectMeta.rds")
+
+
+
+
+Idents(hu_data) <- "state"
+DimPlot(hu_data, label = TRUE)
+
+hu_gene_lists <- list(
+  Homeo = c("CRYBB1", "TMEM119", "P2RY12", "CSF1R"),
+  
+  S1_DAM = c(
+    "TYROBP", "CTSB", "CTSD", "APOE",
+    "B2M", "FTH1"
+  ),
+  
+  S2_DAM = c(
+    "TREM2", "AXL", "CST7", "CTSL",
+    "LPL", "CD9", "CSF1",
+    "ITGAX", "TIMP2"
+  ),
+  
+  LDAM = c(
+    "CD63", "ARHGAP19", "LDHB", "PLIN2",
+    "PLIN3", "ACLY", "ABHD4"
+  ),
+  
+  IRM = c(
+    "IFIT3", "IRF7", "IFIT2", "IFITM3"
+  )
+)
+
+
+
+hu_data <- AddModuleScore(hu_data, 
+                          features = hu_gene_lists, 
+                          name = "Signature")
+
+DotPlot(hu_data, 
+        features = c("Signature1","Signature2","Signature3","Signature4",
+                     "Signature5","TMEM119", "TREM2","SNAP25","SLC1A2", "ALAS2", "P2RY12",
+                     "MRC1", "LYVE1", "CCR2","APOE", "PTK2B", "SPI1", "ZYX", "ABCA7"), 
+        cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+
+
+
+
+
+microglia_cluster_labels <- c(
+  "S1_DAM",       #Mic.1   
+  "S2_DAM",       #Mic.13    
+  "Hom",        #Mic.7  
+  "S2_DAM",        #Mic.12  
+  "S1_DAM",        #Mic.10     
+  "Hom",        #Mic.8 
+  "S1_DAM",         #Mic.6 
+  "Hom",        #Mic.9 
+  "Hom",        #Mic.2 
+  "Hom",         #Mic.4 
+  "Hom",         #Mic.3 
+  "Unknown1",    #Macrophages    
+  "Hom",        #Mic.16  
+  "Unknown2",     #Monocytes      
+  "SNAP25",          #Mic.5 
+  "S2_DAM",         #Mic.15 
+  "IRM",         #Mic.14 
+  "Hom"         #Mic.11 
+)
+
+# Map cluster numbers (0:8) to their corresponding labels
+names(microglia_cluster_labels) <- as.character(0:14)
+
+# Apply the labels to your Seurat object
+names(microglia_cluster_labels) <- levels(hu_data)
+hu_data_new <- RenameIdents(hu_data, microglia_cluster_labels)
+
+shortest_hu <- subset(hu_data_new, idents = c("S1_DAM", "S2_DAM", "Hom", "SNAP25", "IRM"))
+
+
+
+
+shortest_hu <- FindClusters(shortest_hu, resolution = 0.15)
+
+shortest_hu <- RunUMAP(shortest_hu, dims = 1:17)
+# Visualization
+DimPlot(shortest_hu, reduction = "umap")
+
+
+
+
+
+hu_gene_lists <- list(
+  Homeo = c("CRYBB1", "TMEM119", "P2RY12", "CSF1R"),
+  
+  S1_DAM = c(
+    "TYROBP", "CTSB", "CTSD", "APOE",
+    "B2M", "FTH1"
+  ),
+  
+  S2_DAM = c(
+    "TREM2", "AXL", "CST7", "CTSL",
+    "LPL", "CD9", "CSF1",
+    "ITGAX", "TIMP2"
+  ),
+  
+  LDAM = c(
+    "CD63", "ARHGAP19", "LDHB", "PLIN2",
+    "PLIN3", "ACLY", "ABHD4"
+  ),
+  
+  IRM = c(
+    "IFIT3", "IRF7", "IFIT2", "IFITM3"
+  )
+)
+
+
+
+shortest_hu <- AddModuleScore(shortest_hu, 
+                              features = hu_gene_lists, 
+                              name = "Signature")
+
+
+
+DotPlot(shortest_hu, 
+        features = c("Signature1","Signature2","Signature3","Signature4",
+                     "Signature5","TMEM119", "TREM2","SNAP25","SLC1A2", "ALAS2", "P2RY12",
+                     "MRC1", "LYVE1", "CCR2","APOE", "PTK2B", "SPI1", "ZYX", "ABCA7",
+                     "TOP2A", "MKI67"), 
+        cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+
+DimPlot(shortest_hu, label = TRUE)
+
+
+
+
+
+
+
+human_markers <- FindAllMarkers(
+  shortest_hu, only.pos = TRUE,
+  min.pct = 0.01, logfc.threshold = 0.25)
+
+write.csv(human_markers, "~All_markers_subsetted_hu_data.csv")
+
+
+
+
+
+
+
+shorter_still <- subset(shortest_hu, idents=c("0", "1", "2", "3", "4", "6", "7", "8", "9", "10"))
+
+
+
+shorter_still <- FindClusters(shorter_still, resolution = 0.3)
+
+shorter_still <- RunUMAP(shorter_still, dims = 1:17)
+# Visualization
+DimPlot(shorter_still, reduction = "umap")
+
+
+
+
+
+
+
+
+hu_gene_lists <- list(
+  Homeo = c("CRYBB1", "TMEM119", "P2RY12", "CSF1R"),
+  
+  S1_DAM = c(
+    "TYROBP", "CTSB", "CTSD", "APOE",
+    "B2M", "FTH1"
+  ),
+  
+  S2_DAM = c(
+    "TREM2", "AXL", "CST7", "CTSL",
+    "LPL", "CD9", "CSF1",
+    "ITGAX", "TIMP2"
+  ),
+  
+  LDAM = c(
+    "CD63", "ARHGAP19", "LDHB", "PLIN2",
+    "PLIN3", "ACLY", "ABHD4"
+  ),
+  
+  IRM = c(
+    "IFIT3", "IRF7", "IFIT2", "IFITM3"
+  )
+)
+
+
+
+shorter_still <- AddModuleScore(shorter_still, 
+                                features = hu_gene_lists, 
+                                name = "Signature")
+
+
+
+DotPlot(shorter_still, 
+        features = c("Signature1","Signature2","Signature3","Signature4",
+                     "Signature5","TMEM119", "TREM2", "ALAS2", "P2RY12",
+                     "MRC1", "LYVE1", "CCR2","APOE", "PTK2B", "SPI1", "ZYX", "ABCA7",
+                     "TOP2A", "MKI67", "IFIT3", "IRF7"), 
+        cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+
+DimPlot(shorter_still, label = TRUE)
+
+
+
+
+DotPlot(shorter_still, 
+        features = c("P2RY12", "CX3CR1", "TREM2", "MYC", 
+                     "SPP1", "APOE", "HIF1A", "CD63", "CSF1", 
+                     "MYO1E", "IFIT3", "IRF7", "TOP2A", "MKI67"), 
+        cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+
+
+
+human_markers <- FindAllMarkers(
+  shorter_still, only.pos = TRUE,
+  min.pct = 0.01, logfc.threshold = 0.25)
+
+write.csv(human_markers, "~Reso=0.3_Findallmarkers.csv")
+
+
+
+Idents(shorter_still) <- "braac_sex"
+
+
+
+
+#Data for IPA 
+microglia_F0vM0_DEGs <- FindMarkers(shorter_still, ident.1 = "0_female", ident.2 = "0_male", logfc.threshold = 0, min.pct = 0.1)
+write.csv(microglia_F0vM0_DEGs, "~fc=0new_microglia_F0vM0_DEGs.csv")
+
+
+
+
+
+subset_12 <- subset(shorter_still, idents = c("1_female", "2_female", "1_male", "2_male"))
+Idents(subset_12) <- "sex"
+microglia_F12vM12_DEGs <- FindMarkers(subset_12, ident.1 = "female", ident.2 = "male", logfc.threshold = 0, min.pct = 0.1)
+write.csv(microglia_F12vM12_DEGs, "~fc=0new_microglia_F12vM12_DEGs.csv")
+
+
+
+subset_34 <- subset(shorter_still, idents = c("3_female", "4_female", "3_male", "4_male"))
+Idents(subset_34) <- "sex"
+microglia_F34vM34_DEGs <- FindMarkers(subset_34, ident.1 = "female", ident.2 = "male", logfc.threshold = 0, min.pct = 0.1)
+write.csv(microglia_F34vM34_DEGs, "~fc=0new_microglia_F34vM34_DEGs.csv")
+
+
+
+subset_56 <- subset(shorter_still, idents = c("5_female", "6_female", "5_male", "6_male"))
+Idents(subset_56) <- "sex"
+microglia_F56vM56_DEGs <- FindMarkers(subset_56, ident.1 = "female", ident.2 = "male", logfc.threshold = 0, min.pct = 0.1)
+write.csv(microglia_F56vM56_DEGs, "~fc=0new_microglia_F56vM56_DEGs.csv")
+
+
+
+
+
+
+
+DotPlot(shorter_still, 
+        features = c("Signature1","Signature2","Signature3","Signature4",
+                     "Signature5","TMEM119", "TREM2", "P2RY12",
+                     "MRC1", "LYVE1","APOE", "PTK2B", "SPI1", 
+                     "IFIT3", "IRF7",
+                     "SPP1", "TMEM163", "HIF1A", "FTL",
+                     "XACT", "SERPINE1"), 
+        cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+DotPlot(shorter_still, 
+        features = c("TMEM163",
+                     "CX3CR1",
+                     "GRID2",
+                     "MAP2",
+                     "SRGN",
+                     "RPL19",
+                     "PTPRG",
+                     "XACT",
+                     "HSPH1",
+                     "MRC1",
+                     "CD83",
+                     "SERPINE1",
+                     "IFI44L",
+                     "PDK4",
+                     "CERNA2"), 
+        cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+DotPlot(shorter_still, 
+        features = c("Signature1","Signature2","Signature3","Signature4",
+                     "Signature5", "TMEM163",
+                     "CX3CR1",
+                     "GRID2",
+                     "XACT",
+                     "SERPINE1",
+                     "PDK4",
+                     "CERNA2",
+                     "PTPRG",
+                     "MAP2",
+                     "SRGN",
+                     "RPL19",
+                     "CD83",
+                     "IFI44L",
+                     "HSPH1",
+                     "MRC1"
+                     
+                     
+                     
+        ), 
+        cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+
+
+markers <- FindAllMarkers(shorter_still)
+write.csv(markers, "FindALLMarkers04Sep.csv")
+
+
+
+
+microglia_cluster_labels <- c(
+  "Hom_B",        #0
+  "Hom_A",         #1 
+  "Hom_A",          #2
+  "S1_DAM",        #3
+  "DIM",            #4
+  "RiboDAM",      #5
+  "S2_DAM",        #6 
+  "Hom_A",        #7
+  "BAM",         #8
+  "S2_DAM",          #9
+  "Hom_B",          #10
+  "IRM",        #11
+  "Hom_B",       #12
+  "Hom_B"             #13
+)
+
+# Map cluster numbers (0:8) to their corresponding labels
+names(microglia_cluster_labels) <- as.character(0:13)
+
+# Apply the labels to your Seurat object
+names(microglia_cluster_labels) <- levels(shorter_still)
+shorter_still <- RenameIdents(shorter_still, microglia_cluster_labels)
+#Figure 6A
+DimPlot(shorter_still, label = TRUE)
+
+#Figure 6B
+DotPlot(shorter_still, 
+        features = c("Signature1","Signature2","Signature3","Signature4",
+                     "Signature5", "TMEM163",
+                     "CX3CR1",
+                     "GRID2",
+                     "XACT",
+                     "SERPINE1",
+                     "PDK4",
+                     "CERNA2",
+                     "PTPRG",
+                     "MAP2",
+                     "SRGN",
+                     "RPL19",
+                     "CD83",
+                     "IFI44L",
+                     "HSPH1",
+                     "MRC1"
+                     
+                     
+                     
+        ), 
+        cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+
+
+
+shorter_still$cluster_ids <- shorter_still@active.ident
+
+
+
+
+hu_gene_lists <- list(
+  Homeo = c("CRYBB1", "TMEM119", "P2RY12", "CSF1R"),
+  
+  S1_DAM = c(
+    "TYROBP", "CTSB", "CTSD", "APOE",
+    "B2M", "FTH1"
+  ),
+  
+  S2_DAM = c(
+    "TREM2", "AXL", "CST7", "CTSL",
+    "LPL", "CD9", "CSF1",
+    "ITGAX", "TIMP2"
+  ),
+  
+  LDAM = c(
+    "CD63", "ARHGAP19", "LDHB", "PLIN2",
+    "PLIN3", "ACLY", "ABHD4"
+  ),
+  
+  IRM = c(
+    "IFIT3", "IRF7", "IFIT2", "IFITM3"
+  )
+)
+
+
+
+shorter_still <- AddModuleScore(shorter_still, 
+                                features = hu_gene_lists, 
+                                name = "Signature")
+
+DotPlot(shorter_still, 
+        features = c("Signature1","Signature2","Signature3","Signature4",
+                     "Signature5","P2RY12","TREM2","IRF7","MRC2","SNAP25","GFAP", 
+                     "MOG", "MRC1", "SPP1", "APOE", "HIF1A"), 
+        cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+
+
+
+Idents(shorter_still) <- "Groups"
+
+
+
+write.csv(shorter_still@meta.data, "MIDDLEMETADATA.csv")
+
+
+
+
+
+
+
+metadatas_set <- read.csv("MIDDLEMETADATA.csv")
+
+
+shorter_still <- AddMetaData(object = shorter_still, metadata = metadatas_set$bins, col.name = "bins")
+
+
+
+
+
+
+
+
+
+Idents(shorter_still) <- "bins"
+
+
+DotPlot(shorter_still, features = c("KDM6A", "ACTG1", "DDX3X", "TARDBP", "SON", 
+                                    "CSF1","ITGAX","SPP1", "MT1", "SLC2A1",
+                                    "TPT1","BCL2","VEGFA","IGF1"), 
+        cols = c("blue", "red"), dot.scale = 10)+ RotatedAxis()
+
+
+
+
+
+
+
+testdf <- as.data.frame(shorter_still@active.ident)
+
+test2df <- FetchData(object = shorter_still, layer = "orig.ident", vars = c("nFeature_RNA", "orig.ident", "bins"))
+
+mergeddf <- merge(test2df,testdf, by="row.names")
+
+#Figure 6C
+ggplot(mergeddf, aes(x = mergeddf[,3], y =mergeddf[,2], points, fill =  mergeddf[,4])) +
+  geom_bar(stat = "identity", position = "fill") +
+  labs(x = "Cluster", y = "Percentage", title = "Hu_data Stacked Barplot") +
+  scale_fill_viridis_d(option = "turbo")
+
+
+write.csv(mergeddf, "CorrectMeta_stackedbarplot_data.csv")
+

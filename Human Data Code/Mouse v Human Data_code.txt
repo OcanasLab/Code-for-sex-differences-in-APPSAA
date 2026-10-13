@@ -1,0 +1,842 @@
+
+
+########### III. Mouse v Human Data ###########
+
+
+#### Correlation Plot for 56_FvM and APP_FvM
+library(readxl)
+library(ggplot2)
+library(ggrepel)
+
+# ------------------------------------------------------------
+# 1. Read data
+# ------------------------------------------------------------
+
+cor_data <- read_excel(
+    "305intersectionDEGshu+msforcorrelationplot.xlsx"
+)
+
+# ------------------------------------------------------------
+# 2. Genes to highlight
+# ------------------------------------------------------------
+
+highlight_genes <- c(
+    "PTK2B",
+    "TSPO",
+    "CST3",
+    "KDM6A",
+    "DDX3X",
+    "HIF1A",
+    "IFNAR2",
+    "C1QB",
+    "AIF1",
+    "CD63",
+    "P2RY12",
+    "MEF2A",
+    "UTY",
+    "DDX3Y",
+    "KDM5D"
+)
+
+# ------------------------------------------------------------
+# 3. Pearson correlation
+# ------------------------------------------------------------
+
+cor_test <- cor.test(
+    cor_data$`56_FvM`,
+    cor_data$`APP_FvM`,
+    method = "pearson"
+)
+
+r_value <- round(
+    unname(cor_test$estimate),
+    2
+)
+
+p_value <- cor_test$p.value
+
+# Format P-value nicely
+p_label <- ifelse(
+    p_value < 0.001,
+    format.pval(p_value, digits = 2, eps = 0.001),
+    round(p_value, 3)
+)
+
+# ------------------------------------------------------------
+# 4. Linear regression
+# Mouse log2FC ~ Human log2FC
+# ------------------------------------------------------------
+
+model <- lm(
+    `APP_FvM` ~ `56_FvM`,
+    data = cor_data
+)
+
+# Extract slope
+slope <- round(
+    unname(coef(model)[2]),
+    2
+)
+
+# Extract intercept
+intercept <- round(
+    unname(coef(model)[1]),
+    2
+)
+
+# Print regression information to console
+summary(model)
+
+cat(
+    "\nPearson r =", r_value,
+    "\nSlope =", slope,
+    "\nIntercept =", intercept,
+    "\nP-value =", p_value,
+    "\n"
+)
+
+# ------------------------------------------------------------
+# 5. Create correlation plot
+# ------------------------------------------------------------
+
+p <- ggplot(
+    cor_data,
+    aes(
+        x = `56_FvM`,
+        y = `APP_FvM`
+    )
+) +
+    
+    # All genes
+    geom_point(
+        color = "grey70",
+        size = 2,
+        alpha = 0.7
+    ) +
+    
+    # Highlight genes of interest
+    geom_point(
+        data = subset(
+            cor_data,
+            Gene %in% highlight_genes
+        ),
+        color = "red",
+        size = 3
+    ) +
+    
+    # y = x reference line
+    # Represents identical human and mouse log2FC
+    geom_abline(
+        slope = 1,
+        intercept = 0,
+        linetype = "dotted",
+        color = "grey40",
+        linewidth = 0.8
+    ) +
+    
+    # Actual linear regression
+    geom_smooth(
+        method = "lm",
+        se = FALSE,
+        color = "black",
+        linewidth = 1
+    ) +
+    
+    # Zero reference lines
+    geom_vline(
+        xintercept = 0,
+        linetype = "dashed",
+        color = "grey60",
+        linewidth = 0.5
+    ) +
+    
+    geom_hline(
+        yintercept = 0,
+        linetype = "dashed",
+        color = "grey60",
+        linewidth = 0.5
+    ) +
+    
+    # Labels for highlighted genes
+    geom_text_repel(
+        data = subset(
+            cor_data,
+            Gene %in% highlight_genes
+        ),
+        aes(label = Gene),
+        size = 4,
+        fontface = "italic",
+        box.padding = 0.5,
+        point.padding = 0.3,
+        max.overlaps = Inf,
+        min.segment.length = 0
+    ) +
+    
+    # Correlation statistics
+    annotate(
+        "text",
+        x = -14.5,
+        y = 4.5,
+        label = paste0(
+            "Pearson r = ", r_value,
+            "\nSlope = ", slope,
+            "\nP = ", p_label
+        ),
+        hjust = 0,
+        vjust = 1,
+        size = 4.5
+    ) +
+    
+    # Identical X-axis
+    scale_x_continuous(
+        limits = c(-15, 5),
+        breaks = seq(-15, 5, by = 5),
+        expand = c(0, 0)
+    ) +
+    
+    # Identical Y-axis
+    scale_y_continuous(
+        limits = c(-15, 5),
+        breaks = seq(-15, 5, by = 5),
+        expand = c(0, 0)
+    ) +
+    
+    # CRITICAL:
+    # Makes one unit on X physically equal to one unit on Y
+    coord_fixed(
+        ratio = 1
+    ) +
+    
+    labs(
+        x = "Human log2FC (Female vs Male)",
+        y = "Mouse log2FC (APP Female vs APP Male)",
+        title = "Human–Mouse Microglial DEG Correlation"
+    ) +
+    
+    theme_classic(
+        base_size = 14
+    ) +
+    
+    theme(
+        aspect.ratio = 1,
+        plot.title = element_text(
+            hjust = 0.5
+        )
+    )
+
+# Display plot
+p
+
+
+
+
+library(readxl)
+library(ggplot2)
+library(ggrepel)
+library(dplyr)
+
+# ------------------------------------------------------------
+# 1. Read data
+# ------------------------------------------------------------
+
+cor_data <- read_excel(
+    "305intersectionDEGshu+msforcorrelationplot.xlsx"
+)
+
+# ------------------------------------------------------------
+# 2. Genes to highlight
+# ------------------------------------------------------------
+
+highlight_genes <- c(
+    "PTK2B",
+    "TSPO",
+    "CST3",
+    "KDM6A",
+    "DDX3X",
+    "HIF1A",
+    "IFNAR2",
+    "C1QB",
+    "AIF1",
+    "CD63",
+    "P2RY12",
+    "MEF2A"
+)
+
+# ------------------------------------------------------------
+# 3. Pearson correlation
+# ALL genes are included, including UTY, DDX3Y, and KDM5D
+# ------------------------------------------------------------
+
+cor_test <- cor.test(
+    cor_data$`56_FvM`,
+    cor_data$`APP_FvM`,
+    method = "pearson"
+)
+
+# Extract Pearson r
+r_value <- round(
+    unname(cor_test$estimate),
+    2
+)
+
+# Extract P-value
+p_value <- cor_test$p.value
+
+# Format P-value
+p_label <- ifelse(
+    p_value < 0.001,
+    format.pval(
+        p_value,
+        digits = 2,
+        eps = 0.001
+    ),
+    round(p_value, 3)
+)
+
+# ------------------------------------------------------------
+# 4. Linear regression
+# ALL genes are included
+# ------------------------------------------------------------
+
+model <- lm(
+    `APP_FvM` ~ `56_FvM`,
+    data = cor_data
+)
+
+# Regression slope
+slope <- round(
+    unname(coef(model)[2]),
+    2
+)
+
+# Regression intercept
+intercept <- round(
+    unname(coef(model)[1]),
+    2
+)
+
+# ------------------------------------------------------------
+# 5. Print statistics to console
+# ------------------------------------------------------------
+
+cat(
+    "\nGenes included =", nrow(cor_data),
+    "\nPearson r =", r_value,
+    "\nSlope =", slope,
+    "\nIntercept =", intercept,
+    "\nP-value =", p_value,
+    "\n"
+)
+
+summary(model)
+
+# ------------------------------------------------------------
+# 6. Create correlation plot
+# ------------------------------------------------------------
+
+p <- ggplot(
+    cor_data,
+    aes(
+        x = `56_FvM`,
+        y = `APP_FvM`
+    )
+) +
+    
+    # All genes
+    geom_point(
+        color = "grey70",
+        size = 2,
+        alpha = 0.7
+    ) +
+    
+    # Highlight selected genes
+    geom_point(
+        data = subset(
+            cor_data,
+            Gene %in% highlight_genes
+        ),
+        color = "red",
+        size = 3
+    ) +
+    
+    # --------------------------------------------------------
+# y = x reference line
+# --------------------------------------------------------
+
+geom_abline(
+    slope = 1,
+    intercept = 0,
+    linetype = "dotted",
+    color = "grey40",
+    linewidth = 0.8
+) +
+    
+    # --------------------------------------------------------
+# Regression line
+# Calculated using ALL genes
+# --------------------------------------------------------
+
+geom_smooth(
+    method = "lm",
+    se = FALSE,
+    color = "black",
+    linewidth = 1
+) +
+    
+    # --------------------------------------------------------
+# Zero reference lines
+# --------------------------------------------------------
+
+geom_vline(
+    xintercept = 0,
+    linetype = "dashed",
+    color = "grey60",
+    linewidth = 0.5
+) +
+    
+    geom_hline(
+        yintercept = 0,
+        linetype = "dashed",
+        color = "grey60",
+        linewidth = 0.5
+    ) +
+    
+    # --------------------------------------------------------
+# Label highlighted genes
+# --------------------------------------------------------
+
+geom_text_repel(
+    data = subset(
+        cor_data,
+        Gene %in% highlight_genes
+    ),
+    aes(label = Gene),
+    size = 4,
+    fontface = "italic",
+    box.padding = 0.5,
+    point.padding = 0.3,
+    max.overlaps = Inf,
+    min.segment.length = 0
+) +
+    
+    # --------------------------------------------------------
+# Correlation statistics
+# --------------------------------------------------------
+
+annotate(
+    "text",
+    x = -4.8,
+    y = 4.8,
+    label = paste0(
+        "Pearson r = ", r_value,
+        "\nSlope = ", slope,
+        "\nP = ", p_label
+    ),
+    hjust = 0,
+    vjust = 1,
+    size = 4.5
+) +
+    
+    # --------------------------------------------------------
+# Matching X and Y tick marks
+# --------------------------------------------------------
+
+scale_x_continuous(
+    breaks = seq(-5, 5, by = 1)
+) +
+    
+    scale_y_continuous(
+        breaks = seq(-5, 5, by = 1)
+    ) +
+    
+    # --------------------------------------------------------
+# ZOOM plot to -5 to +5
+#
+# IMPORTANT:
+# This does NOT remove genes outside the displayed range.
+# UTY, DDX3Y, KDM5D, etc. are still included in:
+#   - Pearson r
+#   - P-value
+#   - regression slope
+#
+# ratio = 1 makes X and Y physically equivalent.
+# --------------------------------------------------------
+
+coord_fixed(
+    xlim = c(-1, 1),
+    ylim = c(-1, 1),
+    ratio = 1
+) +
+    
+    # --------------------------------------------------------
+# Labels
+# --------------------------------------------------------
+
+labs(
+    x = "Human log2FC (Female vs Male)",
+    y = "Mouse log2FC (APP Female vs APP Male)",
+    title = "Human–Mouse Microglial DEG Correlation"
+) +
+    
+    # --------------------------------------------------------
+# Formatting
+# --------------------------------------------------------
+
+theme_classic(
+    base_size = 14
+) +
+    
+    theme(
+        aspect.ratio = 1,
+        plot.title = element_text(
+            hjust = 0.5
+        )
+    )
+
+# ------------------------------------------------------------
+# 7. Display plot
+# ------------------------------------------------------------
+
+
+
+
+
+
+
+
+### Upset plot for human + mouse FvM DEGs (56_FvM and APP_FvM Only)
+# Install packages if needed
+# install.packages(c("readr", "dplyr", "UpSetR"))
+
+library(readr)
+library(dplyr)
+library(UpSetR)
+
+# ============================================================
+# UpSet plot from 4 DEG columns
+# ============================================================
+
+library(readxl)
+library(UpSetR)
+
+# ------------------------------------------------------------
+# 1. Read ALL columns explicitly as text
+# ------------------------------------------------------------
+
+upset_data <- read_excel(
+    "genesforupsetplot.xlsx",
+    col_types = "text"
+)
+
+# ------------------------------------------------------------
+# 2. Confirm column names
+# ------------------------------------------------------------
+
+print(colnames(upset_data))
+
+
+# ------------------------------------------------------------
+# 3. Extract the four columns BY POSITION
+#
+# This avoids any problems caused by spaces or punctuation
+# in the Excel column names.
+# ------------------------------------------------------------
+
+human_up   <- upset_data[[1]]
+human_down <- upset_data[[2]]
+mouse_up   <- upset_data[[3]]
+mouse_down <- upset_data[[4]]
+
+
+# ------------------------------------------------------------
+# 4. Clean each list
+# ------------------------------------------------------------
+
+clean_list <- function(x) {
+    
+    x <- as.character(x)
+    x <- trimws(x)
+    
+    # Remove true NA values
+    x <- x[!is.na(x)]
+    
+    # Remove empty cells
+    x <- x[x != ""]
+    
+    # Remove literal "NA" if present in spreadsheet
+    x <- x[x != "NA"]
+    
+    # Keep one copy of each gene
+    unique(x)
+}
+
+
+human_up   <- clean_list(human_up)
+human_down <- clean_list(human_down)
+mouse_up   <- clean_list(mouse_up)
+mouse_down <- clean_list(mouse_down)
+
+
+# ------------------------------------------------------------
+# 5. Check DEG counts
+# ------------------------------------------------------------
+
+cat("Human UP:", length(human_up), "\n")
+cat("Human DOWN:", length(human_down), "\n")
+cat("Mouse UP:", length(mouse_up), "\n")
+cat("Mouse DOWN:", length(mouse_down), "\n")
+
+
+# ------------------------------------------------------------
+# 6. Create lists for UpSet
+# ------------------------------------------------------------
+
+deg_list <- list(
+    `56_FvM_UP` = human_up,
+    `56_FvM_DOWN` = human_down,
+    `APP_FvM_UP` = mouse_up,
+    `APP_FvM_DOWN` = mouse_down
+)
+
+
+# ------------------------------------------------------------
+# 7. Check overlaps BEFORE plotting
+# ------------------------------------------------------------
+
+cat(
+    "UP in both:",
+    length(intersect(human_up, mouse_up)),
+    "\n"
+)
+
+cat(
+    "DOWN in both:",
+    length(intersect(human_down, mouse_down)),
+    "\n"
+)
+
+cat(
+    "Human UP / Mouse DOWN:",
+    length(intersect(human_up, mouse_down)),
+    "\n"
+)
+
+cat(
+    "Human DOWN / Mouse UP:",
+    length(intersect(human_down, mouse_up)),
+    "\n"
+)
+
+human_all <- union(human_up, human_down)
+mouse_all <- union(mouse_up, mouse_down)
+
+cat(
+    "TOTAL Human-Mouse overlap:",
+    length(intersect(human_all, mouse_all)),
+    "\n"
+)
+
+
+# ------------------------------------------------------------
+# 8. Convert lists directly to UpSet format
+# ------------------------------------------------------------
+
+upset_input <- fromList(deg_list)
+
+
+# ------------------------------------------------------------
+# 9. Verify UpSetR did not lose genes
+# ------------------------------------------------------------
+
+cat("\nUpSet input set sizes:\n")
+
+colSums(upset_input)
+
+
+# ------------------------------------------------------------
+# 10. Plot
+# ------------------------------------------------------------
+
+upset(
+    upset_input,
+    sets = c(
+        "56_FvM_UP",
+        "56_FvM_DOWN",
+        "APP_FvM_UP",
+        "APP_FvM_DOWN"
+    ),
+    keep.order = TRUE,
+    order.by = "freq",
+    nintersects = NA,
+    empty.intersections = "off"
+)
+
+
+
+### Upset plot for all human groups + mouse 
+
+# ============================================================
+# UpSet plot: All human age groups + APP mouse comparison
+#
+# - Keeps all 10 DEG sets
+# - Removes blank/NA cells
+# - Does NOT display intersections containing 0 genes
+# - Orders intersections by frequency
+# ============================================================
+
+library(readxl)
+library(UpSetR)
+
+
+# ------------------------------------------------------------
+# 1. Read Excel file
+# ------------------------------------------------------------
+
+upset_data <- read_excel(
+    "genesforupsetplot(allgroups).xlsx",
+    col_types = "text"
+)
+
+# Check column names
+colnames(upset_data)
+
+
+# ------------------------------------------------------------
+# 2. Function to clean gene lists
+# ------------------------------------------------------------
+
+clean_list <- function(x) {
+    
+    x <- as.character(x)
+    
+    # Remove leading/trailing spaces
+    x <- trimws(x)
+    
+    # Remove NA
+    x <- x[!is.na(x)]
+    
+    # Remove blank cells
+    x <- x[x != ""]
+    
+    # Remove literal "NA"
+    x <- x[x != "NA"]
+    
+    # Remove duplicate genes
+    unique(x)
+}
+
+
+# ------------------------------------------------------------
+# 3. Extract and clean all 10 DEG lists
+# ------------------------------------------------------------
+
+g0_up       <- clean_list(upset_data[[1]])
+g0_down     <- clean_list(upset_data[[2]])
+
+g12_up      <- clean_list(upset_data[[3]])
+g12_down    <- clean_list(upset_data[[4]])
+
+g34_up      <- clean_list(upset_data[[5]])
+g34_down    <- clean_list(upset_data[[6]])
+
+g56_up      <- clean_list(upset_data[[7]])
+g56_down    <- clean_list(upset_data[[8]])
+
+app_up      <- clean_list(upset_data[[9]])
+app_down    <- clean_list(upset_data[[10]])
+
+
+# ------------------------------------------------------------
+# 4. Create DEG list
+# ------------------------------------------------------------
+
+deg_list <- list(
+    
+    `0_FvM_UP`       = g0_up,
+    `0_FvM_DOWN`     = g0_down,
+    
+    `12_FvM_UP`      = g12_up,
+    `12_FvM_DOWN`    = g12_down,
+    
+    `34_FvM_UP`      = g34_up,
+    `34_FvM_DOWN`    = g34_down,
+    
+    `56_FvM_UP`      = g56_up,
+    `56_FvM_DOWN`    = g56_down,
+    
+    `APP_FvM_UP`     = app_up,
+    `APP_FvM_DOWN`   = app_down
+)
+
+
+# ------------------------------------------------------------
+# 5. Check DEG counts
+# ------------------------------------------------------------
+
+deg_counts <- sapply(deg_list, length)
+
+print(deg_counts)
+
+
+# ------------------------------------------------------------
+# 6. Convert gene lists to UpSet format
+# ------------------------------------------------------------
+
+upset_input <- fromList(deg_list)
+
+
+# ------------------------------------------------------------
+# 7. Confirm no genes were lost
+# ------------------------------------------------------------
+
+cat("\nOriginal DEG counts:\n")
+print(deg_counts)
+
+cat("\nUpSet DEG counts:\n")
+print(colSums(upset_input))
+
+cat("\nDo counts match?\n")
+print(
+    all(
+        deg_counts[names(colSums(upset_input))] ==
+        colSums(upset_input)
+    )
+)
+
+
+# ------------------------------------------------------------
+# 8. Make UpSet plot
+#
+# IMPORTANT:
+# Only intersections containing >= 1 gene are displayed.
+# Zero-count intersections are NOT shown.
+# ------------------------------------------------------------
+
+upset(
+    upset_input,
+    
+    sets = c(
+        "0_FvM_UP",
+        "0_FvM_DOWN",
+        "12_FvM_UP",
+        "12_FvM_DOWN",
+        "34_FvM_UP",
+        "34_FvM_DOWN",
+        "56_FvM_UP",
+        "56_FvM_DOWN",
+        "APP_FvM_UP",
+        "APP_FvM_DOWN"
+    ),
+    
+    # Keep set order as specified above
+    keep.order = TRUE,
+    
+    # Show largest intersections first
+    order.by = "freq",
+    
+    # Show all NON-ZERO intersections
+    nintersects = NA
+)
+
+
+

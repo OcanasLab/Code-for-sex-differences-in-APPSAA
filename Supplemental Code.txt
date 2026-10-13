@@ -1,0 +1,7 @@
+Supplemental Code:
+
+### DotPlot for supplemental figure of APP processing and neuronal function and stress ###
+
+DotPlot(YngvOldvAPP_microgliav2_filtered, features = c("App","Bace1","Psen1","Jun","Egr1","Arc","Syt1","Snap25","Syn1","Dlg4","Gria1","Grin1"), cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
+
+DotPlot(neurons, features = c("App","Bace1","Psen1","Jun","Egr1","Arc","Syt1","Snap25","Syn1","Dlg4","Gria1","Grin1"), cols = c("blue", "red"), dot.scale = 10)+RotatedAxis()
